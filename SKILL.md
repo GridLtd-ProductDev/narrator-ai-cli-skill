@@ -44,6 +44,7 @@ narrator-ai-cli config init
 
 # Or set directly
 narrator-ai-cli config set app_key <your_app_key>
+# No API key yet? Contact support: WeChat `gezimufeng` or email merlinyang@gridltd.com
 
 # Verify
 narrator-ai-cli config show
@@ -428,16 +429,16 @@ narrator-ai-cli user create-key --json   # create a new sub API key
 
 ## Error Handling
 
-> **Support Contact** (for balance/billing issues): WeChat `gezimufeng`, or email `merlinyang@gridltd.com`
+> **Support Contact** (for balance/billing, app_key issues — including obtaining, renewing, or troubleshooting API keys): WeChat `gezimufeng`, or email `merlinyang@gridltd.com`
 
 | Code | Meaning | Action |
 |------|---------|--------|
 | `10000` | Success | - |
 | `10001` | Failed | Check params |
-| `10002` | App key expired | Renew key |
+| `10002` | App key expired | Contact support to renew key (see **Support Contact** above) |
 | `10003` | Sign expired | Check timestamp |
-| `10004` | Invalid app key | Verify key with `config show` |
-| `10005` | Invalid sign | Check auth |
+| `10004` | Invalid app key | Run `config show` to verify; if incorrect, contact support to obtain a valid key (see **Support Contact** above) |
+| `10005` | Invalid sign | Check app_key config; contact support if issue persists (see **Support Contact** above) |
 | `10006` | Invalid timestamp | Check clock sync |
 | `10007` | Not found | Check resource ID |
 | `10008` | Invalid method | Check HTTP method |
@@ -447,7 +448,7 @@ narrator-ai-cli user create-key --json   # create a new sub API key
 | `10012` | Task type not found | Use `task types` to list valid types |
 | `10013` | Insufficient balance (key) | Contact support to top up sub-key quota (see **Support Contact** above) |
 | `40000` | Gradio timeout | Retry (backend overloaded) |
-| `50000` | Unauthorized | Check auth config |
+| `50000` | Unauthorized | Check app_key config; contact support if key is missing or invalid (see **Support Contact** above) |
 | `50001` | Database error | Retry later |
 | `50002` | System busy | Retry later |
 | `50003` | System error | Contact support |
