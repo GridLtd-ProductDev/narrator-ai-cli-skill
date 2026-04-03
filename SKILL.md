@@ -21,10 +21,15 @@ tags:
 metadata:
   openclaw:
     emoji: "🎬"
+    primaryEnv: NARRATOR_APP_KEY
+    install:
+      - name: narrator-ai-cli
+        type: pip
+        spec: "narrator-ai-cli @ https://github.com/jieshuo-ai/narrator-ai-cli/archive/refs/tags/v1.0.0.zip"
     requires:
       bins:
         - narrator-ai-cli
-      primaryEnv:
+      env:
         - NARRATOR_APP_KEY
 ---
 
