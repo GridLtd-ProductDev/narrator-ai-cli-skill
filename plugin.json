@@ -1,6 +1,6 @@
 {
   "name": "narrator-ai-cli-skill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI Agent skill for narrator-ai-cli — create AI-narrated film/drama commentary videos end-to-end via natural language commands. Supports two workflow paths, 93 movies, 146 BGM tracks, 63 dubbing voices, 90+ narration templates.",
   "author": {
     "name": "jieshuo-ai",
