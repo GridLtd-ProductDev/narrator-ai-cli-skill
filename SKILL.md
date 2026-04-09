@@ -1,6 +1,6 @@
 ---
 name: narrator-ai-cli
-version: "1.0.1"
+version: "1.0.0"
 license: MIT
 description: >-
   Create AI-narrated film/drama commentary videos via CLI.
@@ -211,20 +211,35 @@ Use `learning_model_id` from template directly — **no need for popular-learnin
 narrator-ai-cli task search-movie "飞驰人生" --json
 ```
 
-Returns up to 3 results with: title, local_title, original_title, year, director, stars, genre, summary, poster_url, is_partial.
+Returns up to 3 results. Each result contains:
+
+```json
+{
+  "title": "string",
+  "local_title": "string",
+  "year": "string",
+  "director": "string",
+  "stars": ["string"],
+  "genre": "string",
+  "summary": "string"
+}
+```
 
 ⚠️ May take **60+ seconds** (Gradio backend). Results cached 24h.
 
 ### Step 1: Fast Writing
 
 ```bash
-narrator-ai-cli task create fast-writing --json -d '{
-  "learning_model_id": "<from narration-styles>",
-  "target_mode": "1",
-  "playlet_name": "飞驰人生",
-  "confirmed_movie_json": <paste search-movie result>,
-  "model": "flash"
-}'
+# Save search result, then write full request body to a JSON file (required for confirmed_movie_json)
+# request.json:
+# {
+#   "learning_model_id": "<from narration-styles>",
+#   "target_mode": "1",
+#   "playlet_name": "飞驰人生",
+#   "confirmed_movie_json": { ...paste search-movie result object... },
+#   "model": "flash"
+# }
+narrator-ai-cli task create fast-writing --json -d @request.json
 ```
 
 **Full parameters:**
@@ -246,7 +261,19 @@ narrator-ai-cli task create fast-writing --json -d '{
 | `webhook_token` | str | No | - | Callback authentication token |
 | `webhook_data` | str | No | - | Passthrough data for callback |
 
-**Output**: `task_id` → poll until status=2 → extract `task_id` + `results.file_ids[0]`
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `file_ids[0]`:
+
+```json
+{
+  "tasks": [{
+    "task_id": "nq_20260409132701_3fa1be",
+    "order_num": "nq_20260409132701_3fa1be"
+  }],
+  "file_ids": ["1f599a1087354945892a082b72c680bf"]
+}
+```
+
+Save: `task_id` from creation response (for fast-clip-data `task_id` input), `file_ids[0]` (for fast-clip-data `file_id` input).
 
 ### Step 2: Fast Clip Data
 
@@ -263,7 +290,21 @@ narrator-ai-cli task create fast-clip-data --json -d '{
 
 Optional: narration_script_file, custom_cover, subtitle_style, font_path
 
-**Output**: `task_order_num` (used as `order_num` in video-composing)
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `file_ids[0]` and `order_info.order_num`:
+
+```json
+{
+  "tasks": [{
+    "clip_data_file_id": "0a58eca6b1784e4e93cd7e65e86c19b6"
+  }],
+  "file_ids": ["0a58eca6b1784e4e93cd7e65e86c19b6"],
+  "order_info": {
+    "order_num": "b7a83b9d290ed4641e74629c8cc0480e"
+  }
+}
+```
+
+Save: `file_ids[0]` (for optional magic-video staged mode), `order_info.order_num` — **required for video-composing**.
 
 ### Step 3: Video Composing
 
@@ -280,9 +321,21 @@ narrator-ai-cli task create video-composing --json -d '{
 
 Optional: custom_cover, subtitle_style, font_path
 
-**Output**: `task_id`, video URLs in results
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `video_url` from results:
+
+```json
+{
+  "tasks": [{
+    "video_url": "https://oss.example.com/.../output.mp4"
+  }]
+}
+```
+
+Note: `type_name` is `video_composing` (no BGM) or `video_composing_2` (with BGM); both return `video_url` in the same structure.
 
 ### Step 4 (Optional): Magic Video — Visual Template
+
+> ⚠️ **Agent restriction**: Do NOT auto-create magic-video tasks. Only create when the user explicitly requests a visual template. Present available templates as options and let the user choose.
 
 ```bash
 # List templates first
@@ -294,9 +347,9 @@ narrator-ai-cli task create magic-video --json -d '{
   "template_name": ["template_name"]
 }'
 
-# Staged mode (from clip data file_id)
+# Staged mode (from clip-data/fast-clip-data file_ids[0])
 narrator-ai-cli task create magic-video --json -d '{
-  "file_id": "<file_id from step 2 results.file_ids[0]>",
+  "file_id": "<file_ids[0] from clip-data or fast-clip-data results>",
   "template_name": ["template_name"]
 }'
 ```
@@ -312,51 +365,88 @@ Optional: template_params (per-template params dict), mode (one_stop/staged), cl
 ```bash
 narrator-ai-cli task create popular-learning --json -d '{
   "video_srt_path": "<srt_file_id>",
-  "video_path": "<video_file_id>",
   "narrator_type": "movie",
   "model_version": "advanced"
 }'
 ```
 
-**Output**: `learning_model_id` (query task until status=2, extract from results)
+**narrator_type options**: `短剧` `电影` `第一人称电影` `多语种电影` `第一人称多语种` `movie` `short_drama` `first_person_movie` `multilingual` `first_person_multilingual`
+
+**model_version**: `advanced` (高级版) or `standard` (标准版)
+
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Parse `task_result` JSON string → `agent_unique_code` is the `learning_model_id`:
+
+```json
+{
+  "tasks": [{
+    "task_result": "{\"agent_unique_code\": \"narrator-20251121160424-wjtOXO\"}"
+  }]
+}
+```
+
+→ `learning_model_id = "narrator-20251121160424-wjtOXO"`
+
+Alternatively, use a pre-built template `id` from `task narration-styles --json` as `learning_model_id` directly — **no popular-learning step needed**.
 
 ### Step 2: Generate Writing
 
 ```bash
 narrator-ai-cli task create generate-writing --json -d '{
   "learning_model_id": "<from step 1 or pre-built template>",
-  "learning_srt": "",
-  "native_video": "",
-  "native_srt": "",
   "playlet_name": "Movie Name",
   "playlet_num": "1",
-  "target_platform": "抖音",
-  "vendor_requirements": "",
-  "task_count": 1,
-  "target_character_name": "<main_character_name>",
-  "story_info": "",
-  "episodes_data": [{"video_oss_key": "<video_file_id>", "srt_oss_key": "<srt_file_id>", "negative_oss_key": "<video_file_id>", "num": 1}]
+  "episodes_data": [{"video_oss_key": "<video_file_id>", "srt_oss_key": "<srt_file_id>", "negative_oss_key": "<video_file_id>", "num": 1}],
+  "refine_srt_gaps": false
 }'
 ```
 
-**Output**: `task_order_num` + `results.file_ids[0]`
+Optional: `refine_srt_gaps` (bool) — enables AI scene analysis. **Only set to `true` when user explicitly requests it.**
+
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `task_result` (narration script file path) and `order_info` from results:
+
+```json
+{
+  "tasks": [{
+    "task_result": "video-clips-data/20251126/narrator/t_66449_47KIRY/narration.txt"
+  }],
+  "order_info": {
+    "order_num": "script_69269bfc_GfVEgA"
+  }
+}
+```
+
+Save: `task_id` from the initial creation response — **required as input for clip-data step**.
 
 ### Step 3: Clip Data
 
 ```bash
 narrator-ai-cli task create clip-data --json -d '{
-  "order_num": "<task_order_num from step 2>",
+  "task_id": "<task_id from step 2 (generate-writing) creation response>",
   "bgm": "<bgm_id>",
   "dubbing": "<voice_id>",
   "dubbing_type": "普通话"
 }'
 ```
 
-**Output**: `file_ids[0]` (for magic-video staged mode)
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `file_ids[0]` and `order_info.order_num`:
+
+```json
+{
+  "tasks": [{
+    "clip_data_file_id": "1c54f4f3626d4070acd40a786408a4b5"
+  }],
+  "file_ids": ["1c54f4f3626d4070acd40a786408a4b5"],
+  "order_info": {
+    "order_num": "d5580ea2aaf6b15d2ea259fbf7ea93dc"
+  }
+}
+```
+
+Save: `file_ids[0]` (for optional magic-video staged mode), `order_info.order_num` — **required for video-composing**.
 
 ### Step 4-5: Same as Fast Path Steps 3-4
 
-**IMPORTANT**: video-composing uses `order_num` from **generate-writing (step 2)**, NOT from clip-data.
+**IMPORTANT**: video-composing uses `order_num` from **clip-data (step 3)** `order_info.order_num`, NOT from generate-writing.
 
 ## Standalone Tasks
 
@@ -398,7 +488,7 @@ narrator-ai-cli task budget --json -d '{
 # Verify materials before task creation
 narrator-ai-cli task verify --json -d '{
   "bgm": "<file_id>",
-  "dubing_id": "<voice_id>",
+  "dubbing_id": "<voice_id>",
   "native_video": "<file_id>",
   "native_srt": "<file_id>"
 }'
@@ -491,6 +581,7 @@ CLI exits code 1 on any error, prints to stderr.
                         │
     ┌───────────────────┼───────────────────────┐
     │  Standard Path    │           Fast Path    │
+    │                   │                        │
     ▼                   │                        ▼
  popular-learning       │              search-movie
  OUT: learning_model_id │              OUT: confirmed_movie_json
@@ -498,23 +589,25 @@ CLI exits code 1 on any error, prints to stderr.
     │                   │                        ▼
     ▼                   │              fast-writing
  generate-writing       │              OUT: task_id, file_ids[0]
- OUT: task_order_num ─┐ │                        │
-     file_ids[0]      │ │                        ▼
-    │                 │ │              fast-clip-data
-    ▼                 │ │              IN: task_id + file_id from above
- clip-data            │ │              OUT: task_order_num
- OUT: file_ids[0]     │ │                        │
-    │                 │ │                        │
-    └─────────────────┼─┼────────────────────────┘
-                      │ ▼
-                 video-composing
-                 IN: order_num (from writing step!)
-                     bgm, dubbing, dubbing_type
-                 OUT: task_id, video URLs
+ OUT: task_id ─────────┬│                        │
+    │                  ││                        ▼
+    ▼                  ││              fast-clip-data
+ clip-data             ││              IN: task_id + file_id
+ IN: generate-writing  ││              OUT: file_ids[0]
+     task_id           ││                  order_info.order_num
+ OUT: file_ids[0]      ││                        │
+     order_info        ││                        │
+     .order_num ───────┴┴────────────────────────┘
                         │
                         ▼
-                 magic-video (optional)
-                 IN: task_id (one-stop) OR file_id (staged)
+                 video-composing
+                 IN: order_num (from clip-data or fast-clip-data!)
+                     bgm, dubbing, dubbing_type
+                 OUT: task_id, tasks[0].video_url
+                        │
+                        ▼
+                 magic-video (OPTIONAL — only on explicit user request)
+                 IN: task_id (one-stop) OR file_ids[0] from clip-data (staged)
                      template_name (from 'task templates')
                  OUT: sub_tasks with rendered video URLs
 ```
@@ -525,7 +618,7 @@ CLI exits code 1 on any error, prints to stderr.
 2. **Source file_ids from `file list` or `material list`.** Never guess file_ids.
 3. **Tasks are async.** Create returns `task_id` → poll `task query <task_id> --json` until status `2` (success) or `3` (failed).
 4. **`search-movie` may take 60+ seconds** (Gradio backend, cached 24h). Set adequate timeout.
-5. **video-composing uses the writing step's order_num**, NOT clip-data's. This is the most common mistake.
+5. **video-composing uses the clip-data step's `order_info.order_num`** (clip-data in Standard Path, fast-clip-data in Fast Path). NOT the writing step's order_num — this is the most common mistake.
 6. **Prefer pre-built narration templates** over running popular-learning. Use `task narration-styles --json` to list, browse https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc for preview.
 7. **Use `-d @file.json`** for large request bodies to avoid shell quoting issues.
 8. **Use `task verify`** before creating expensive tasks to catch missing/invalid materials early.
