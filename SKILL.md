@@ -142,11 +142,23 @@ search-movie → fast-writing → fast-clip-data → video-composing → magic-v
 | `"2"` | 原声混剪 (Original Mix) | `episodes_data[{srt_oss_key, num}]` |
 | `"3"` | 冷门/新剧 (New Drama) | `episodes_data[{srt_oss_key, num}]` |
 
+## Resource Selection Protocol
+
+**All resource selection steps require user confirmation before proceeding.** Follow these rules at every resource step:
+
+1. **Never auto-select.** Always fetch options via CLI, present them to the user, and wait for explicit confirmation before using any resource in a task.
+2. **Present up to 5–8 options** per resource type. Pre-filter by context (content genre, mood, language) to surface the most relevant candidates.
+3. **Fallback when user has no preference.** If the user expresses no preference, present exactly **3 options** with a recommendation and the reasoning for each — still wait for confirmation before proceeding.
+4. **Show the right fields.** Agent decides which fields to display per resource type, but always include the resource ID needed for the task parameter.
+5. **Confirm one resource at a time.** Source files → BGM → Dubbing → Template. Do not advance to task creation until all required resources are confirmed.
+
 ## Prerequisites: Select Resources
 
 Before creating any task, gather these resources first.
 
 ### 1. Source Files (Video + SRT)
+
+> ⚠️ **Agent behavior**: Run `material list --search "<movie name>"` and present **all returned results** (usually ≤ 3) to the user — show title, year, genre, and summary. Wait for the user to pick one before proceeding. If the user wants to upload their own files, guide them through the `file upload` flow for both video and SRT. Do NOT proceed to any writing step until `video_file_id` and `srt_file_id` are confirmed by the user.
 
 ```bash
 # Option A: Pre-built materials (93 movies, recommended)
@@ -171,6 +183,8 @@ Supported formats: .mp4, .mkv, .mov, .mp3, .m4a, .wav, .srt, .jpg, .jpeg, .png
 
 ### 2. BGM (Background Music)
 
+> ⚠️ **Agent behavior**: Infer the mood/genre from context, then use `bgm list --search "<keyword>"` to pre-filter. Present **5–8 tracks** (Agent decides which fields best represent each track — e.g., name, style description). If the user has no preference, recommend **3 tracks** with a brief reason for each (e.g., "matches the film's fast-paced action tone") and wait for confirmation. Do NOT use a `bgm` ID in any task until the user confirms.
+
 ```bash
 narrator-ai-cli bgm list --json                    # 146 tracks
 narrator-ai-cli bgm list --search "单车" --json
@@ -178,6 +192,8 @@ narrator-ai-cli bgm list --search "单车" --json
 ```
 
 ### 3. Dubbing Voice
+
+> ⚠️ **Agent behavior**: Infer the target language from context; if ambiguous, ask the user before listing. Run `dubbing list --lang <language>` to filter, then present **all matching voices** (typically < 15 per language) — include name and tags. If the user has no preference, recommend **3 voices** with reasoning (e.g., "neutral tone fits documentary narration style") and wait for confirmation. Do NOT use a dubbing `id` or `dubbing_type` in any task until the user confirms both.
 
 ```bash
 narrator-ai-cli dubbing list --json                 # 63 voices, 11 languages
@@ -191,6 +207,8 @@ narrator-ai-cli dubbing tags --json
 Languages: 普通话(39), English(4), 日语(3), 韩语(2), Spanish(3), Portuguese(2), German(2), French(2), Arabic(2), Thai(2), Indonesian(2).
 
 ### 4. Narration Style Templates (90+, 12 genres)
+
+> ⚠️ **Agent behavior**: Infer the content genre from context and run `task narration-styles --genre <genre>` to pre-filter. Present **3–5 templates** (Agent decides which fields best represent each). Also share the preview link https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc to help the user browse visually. If the user has no preference, recommend **3 templates** with a brief style description and reasoning, and wait for confirmation. Do NOT use a `learning_model_id` in any task until the user confirms.
 
 ```bash
 narrator-ai-cli task narration-styles --json
