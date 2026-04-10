@@ -4,7 +4,7 @@ version: "1.0.1"
 license: MIT
 description: >-
   Create AI-narrated film/drama commentary videos via CLI.
-  Two workflow paths (Original & Adapted narration), 93 movies,
+  Two workflow paths (Original & Adapted narration), 100+ movies,
   146 BGM tracks, 63 dubbing voices in 11 languages, 90+
   narration templates. Use when creating narration videos,
   film commentary, short drama dubbing, or video production.
@@ -95,7 +95,7 @@ src/narrator_ai/
 │   ├── user.py         # balance/login/keys/create-key
 │   ├── task.py         # 9 task types, create/query/list/budget/verify/search-movie/narration-styles/templates/get-writing/save-writing/save-clip
 │   ├── file.py         # 3-step upload (presigned URL → OSS PUT → callback), download/list/info/storage/delete
-│   ├── materials.py    # 93 pre-built movies (--genre filter; no --search, filter locally)
+│   ├── materials.py    # 100+ pre-built movies (--page/--size pagination; no --genre/--search, filter locally)
 │   ├── bgm.py          # 146 BGM tracks (--search filter)
 │   └── dubbing.py      # 63 voices, 11 languages (--lang, --tag, --search filters)
 └── models/
@@ -213,7 +213,6 @@ narrator-ai-cli material list --json --page 1 --size 100 \
 | (not in material) | `director` | Omit if unavailable |
 
 ```bash
-
 # Option B: Upload your own
 narrator-ai-cli file upload ./movie.mp4 --json    # Returns file_id
 narrator-ai-cli file upload ./subtitles.srt --json
@@ -391,10 +390,10 @@ narrator-ai-cli task create fast-writing --json -d '{
 ```json
 {
   "tasks": [{
-    "task_id": "nq_20260409132701_3fa1be",
-    "order_num": "nq_20260409132701_3fa1be"
+    "task_id": "<task_id>",
+    "order_num": "<order_num>"
   }],
-  "file_ids": ["1f599a1087354945892a082b72c680bf"]
+  "file_ids": ["<file_id>"]
 }
 ```
 
@@ -526,7 +525,7 @@ narrator-ai-cli material list --json --page 1 --size 100 \
 
 ```bash
 narrator-ai-cli task create popular-learning --json -d '{
-  "video_srt_path": "<srt_file_id>",
+  "video_srt_path": "<srt_file_id from Step 0>",
   "narrator_type": "movie",
   "model_version": "advanced"
 }'
@@ -753,7 +752,7 @@ CLI exits code 1 on any error, prints to stderr.
  found → video_file_id  │         found → ask user: mode=1 or mode=2?
          srt_file_id    │         mode=1: confirmed_movie_json from material
  not found → file upload│         mode=2: confirmed_movie_json + episodes_data from material
-    │                   │         (both skip Step 0 / search-movie)
+    │                   │         (both skip search-movie)
     ▼                   │         not found → search-movie (Step 0) → target_mode=1
  popular-learning       │         user SRT known → search-movie + target_mode=2
  OUT: learning_model_id │         user SRT obscure → target_mode=3 (optional confirmed_movie_json)
