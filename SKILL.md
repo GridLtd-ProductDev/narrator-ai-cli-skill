@@ -1,6 +1,6 @@
 ---
 name: narrator-ai-cli
-version: "1.0.0"
+version: "1.0.1"
 license: MIT
 description: >-
   Create AI-narrated film/drama commentary videos via CLI.
@@ -95,7 +95,7 @@ src/narrator_ai/
 │   ├── user.py         # balance/login/keys/create-key
 │   ├── task.py         # 9 task types, create/query/list/budget/verify/search-movie/narration-styles/templates/get-writing/save-writing/save-clip
 │   ├── file.py         # 3-step upload (presigned URL → OSS PUT → callback), download/list/info/storage/delete
-│   ├── materials.py    # 93 pre-built movies (--genre, --search filters)
+│   ├── materials.py    # 93 pre-built movies (--genre filter; no --search, filter locally)
 │   ├── bgm.py          # 146 BGM tracks (--search filter)
 │   └── dubbing.py      # 63 voices, 11 languages (--lang, --tag, --search filters)
 └── models/
@@ -125,22 +125,24 @@ src/narrator_ai/
 ### Path 1: Adapted Narration (二创文案, Standard)
 
 ```
-popular-learning → generate-writing → clip-data → video-composing → magic-video(optional)
+material list (local search) → [file upload if not in materials] → popular-learning → generate-writing → clip-data → video-composing → magic-video(optional)
 ```
 
 ### Path 2: Original Narration (原创文案, Fast & Cheaper)
 
 ```
-search-movie → fast-writing → fast-clip-data → video-composing → magic-video(optional)
+material list (local search) → [search-movie if not in materials] → fast-writing → fast-clip-data → video-composing → magic-video(optional)
 ```
+
+> ⚠️ **Agent behavior**: Before starting, always ask the user which path to use — **Standard** (二创文案, adapted narration) or **Fast** (原创文案, recommended). Do not auto-select a path.
 
 ### 3 Modes (target_mode for fast-writing)
 
 | Mode | Name | Required Input |
 |------|------|----------------|
-| `"1"` | 热门影视 (Hot Drama) | `confirmed_movie_json` from `search-movie` |
-| `"2"` | 原声混剪 (Original Mix) | `episodes_data[{srt_oss_key, num}]` |
-| `"3"` | 冷门/新剧 (New Drama) | `episodes_data[{srt_oss_key, num}]` |
+| `"1"` | 热门影视 (纯解说) | `confirmed_movie_json` (from material data or `search-movie`); **no `episodes_data`** |
+| `"2"` | 原声混剪 (Original Mix) | `confirmed_movie_json` + **`episodes_data[{srt_oss_key, num}]`** required |
+| `"3"` | 冷门/新剧 (New Drama) | **`episodes_data[{srt_oss_key, num}]`** required; `confirmed_movie_json` optional |
 
 ## Resource Selection Protocol
 
@@ -158,15 +160,59 @@ Before creating any task, gather these resources first.
 
 ### 1. Source Files (Video + SRT)
 
-> ⚠️ **Agent behavior**: Run `material list --search "<movie name>"` and present **all returned results** (usually ≤ 3) to the user — show title, year, genre, and summary. Wait for the user to pick one before proceeding. If the user wants to upload their own files, guide them through the `file upload` flow for both video and SRT. Do NOT proceed to any writing step until `video_file_id` and `srt_file_id` are confirmed by the user.
+> ⚠️ **Agent behavior**: Use `material list --json --page 1 --size 100` to fetch pre-built materials. Check the `total` field in the response — if `total > 100`, fetch additional pages until all items are retrieved. **Search programmatically using `grep` or `python3 -c` piped from the JSON output — do NOT rely on the terminal display, which may be truncated and can miss items.** Present **all matching results** (usually ≤ 3) to the user — show title, year, genre, and summary. Wait for the user to pick one before proceeding. If the user wants to upload their own files, guide them through the `file upload` flow for both video and SRT. Do NOT proceed to any writing step until `video_file_id` and `srt_file_id` are confirmed by the user.
 
 ```bash
-# Option A: Pre-built materials (93 movies, recommended)
-narrator-ai-cli material list --json
-narrator-ai-cli material list --search "飞驰人生" --json
-narrator-ai-cli material list --genre 喜剧片 --json
-narrator-ai-cli material genres --json
-# Returns: video_id (= video_oss_key & negative_oss_key), srt_id (= srt_oss_key)
+# Option A: Pre-built materials (90+ movies, recommended)
+narrator-ai-cli material list --json --page 1 --size 100
+# If total > 100, fetch more pages: --page 2 --size 100, etc., until all items are retrieved
+```
+
+Response structure:
+
+```json
+{
+  "total": 101,
+  "page": 1,
+  "size": 100,
+  "items": [
+    {
+      "id": "<material_id>",
+      "name": "极限职业",
+      "title": "Extreme Job",
+      "year": "2019",
+      "type": "喜剧片",
+      "story_info": "...",
+      "character_name": "[柳承龙 (Ryu Seung-ryong), 李荷妮 (Lee Ha-nee), ...]",
+      "cover": "https://...",
+      "video_file_id": "<video_file_id>",
+      "srt_file_id": "<srt_file_id>"
+    }
+  ]
+}
+```
+
+```bash
+# Search programmatically (case-insensitive) — do NOT rely on truncated terminal output:
+narrator-ai-cli material list --json --page 1 --size 100 | grep -i "飞驰人生"
+narrator-ai-cli material list --json --page 1 --size 100 \
+  | python3 -c "import json, sys; items = json.load(sys.stdin).get('items', []); \
+[print(json.dumps(i, ensure_ascii=False)) for i in items if '飞驰' in i.get('name','') or '飞驰' in i.get('title','')]"
+```
+
+**Material → `confirmed_movie_json` field mapping** (construct locally, no `search-movie` needed):
+
+| Material field | `confirmed_movie_json` field | Notes |
+|---|---|---|
+| `name` | `local_title` | Chinese title |
+| `title` | `title` | English title |
+| `year` | `year` | |
+| `type` | `genre` | e.g. `喜剧片` |
+| `story_info` | `summary` | |
+| `character_name` | `stars` | Parse JSON array string |
+| (not in material) | `director` | Omit if unavailable |
+
+```bash
 
 # Option B: Upload your own
 narrator-ai-cli file upload ./movie.mp4 --json    # Returns file_id
@@ -221,9 +267,21 @@ Use `learning_model_id` from template directly — **no need for popular-learnin
 
 ## Fast Path Workflow (Recommended)
 
-### Step 0: Search Movie Info
+### Step 0: Find Source Material & Determine Mode
 
-**Required for target_mode=1.** Do NOT fabricate `confirmed_movie_json`.
+> ⚠️ **Agent behavior**: Confirm the movie or drama name with the user before proceeding (ask if not yet specified). Then follow this decision flow to determine source material and `target_mode`.
+
+**Decision flow:**
+
+1. Run `material list --json --page 1 --size 100`. Check `total` in the response — if `total > 100`, fetch subsequent pages until all items are retrieved. **Search programmatically using `grep -i` or `python3 -c` piped from the JSON output — do NOT rely on the terminal display, which may be truncated.** Repeat for each page until a match is found or all pages are exhausted.
+2. **Found in pre-built materials** → construct `confirmed_movie_json` from material fields (see mapping in Prerequisites § Source Files). Present the match to the user and **ask which mode**:
+   - **纯解说 / Pure narration (target_mode=1)**: `confirmed_movie_json` from material. **No `episodes_data`.**
+   - **原声混剪 / Original mix (target_mode=2)**: `confirmed_movie_json` from material + `episodes_data` using material's `srt_file_id` as `srt_oss_key`.
+3. **Not found in materials (known movie/drama)** → run `task search-movie` (see command below) → `target_mode=1`. Use returned `confirmed_movie_json`. **No `episodes_data`.**
+4. **Not found, user provides their own SRT (known movie)** → run `task search-movie` for `confirmed_movie_json` → `target_mode=2`. Use uploaded SRT as `srt_oss_key` in `episodes_data`.
+5. **Obscure/new drama, user provides SRT** → `target_mode=3`. `confirmed_movie_json` is optional. Use uploaded SRT in `episodes_data`.
+
+**`search-movie` command** (run only for flows 3 and 4 above; never fabricate its output):
 
 ```bash
 narrator-ai-cli task search-movie "飞驰人生" --json
@@ -247,31 +305,62 @@ Returns up to 3 results. Each result contains:
 
 ### Step 1: Fast Writing
 
-**Decision flow — determine `target_mode` in order:**
-
-1. Run `material list --search "<movie name>"` first.
-2. **Found in pre-built materials** → `target_mode: "2"`, use material's `srt_id` as `srt_oss_key` in `episodes_data`. Skip Step 0.
-3. **Not found** → do NOT pick `target_mode` yet. Run Step 0 (`search-movie`) first, then use `target_mode: "1"` with the returned `confirmed_movie_json`.
-4. **User provides their own SRT** → `target_mode: "2"` (known drama/movie) or `"3"` (obscure/new title), construct `episodes_data` with the uploaded `srt_oss_key`. Skip Step 0.
+Using the `target_mode`, `confirmed_movie_json`, and `episodes_data` determined in Step 0, create the fast-writing task:
 
 ```bash
-# Case A: Pre-built material found (target_mode=2) — skip Step 0
-narrator-ai-cli task create fast-writing --json -d '{
-  "learning_model_id": "<from narration-styles>",
-  "target_mode": "2",
-  "playlet_name": "飞驰人生",
-  "episodes_data": [{"srt_oss_key": "<material srt_id>", "num": 1}],
-  "model": "flash"
-}'
-
-# Case B: Not in pre-built materials — run Step 0 first, then target_mode=1
+# Case A1: Pre-built material found, user chose pure narration (target_mode=1)
+#   confirmed_movie_json from material data; no episodes_data
 narrator-ai-cli task create fast-writing --json -d @request.json
-# request.json: {"learning_model_id": "...", "target_mode": "1", "playlet_name": "...", "confirmed_movie_json": {...}, "model": "flash"}
+# request.json:
+# {
+#   "learning_model_id": "...",
+#   "target_mode": "1",
+#   "playlet_name": "飞驰人生",
+#   "confirmed_movie_json": {
+#     "local_title": "<material.name>",
+#     "title": "<material.title>",
+#     "year": "<material.year>",
+#     "genre": "<material.type>",
+#     "summary": "<material.story_info>",
+#     "stars": <material.character_name (parsed array)>
+#   },
+#   "model": "flash"
+# }
 
-# Case C: User's own SRT (target_mode=2 or 3) — skip Step 0
+# Case A2: Pre-built material found, user chose original mix (target_mode=2)
+#   confirmed_movie_json from material data; episodes_data uses material.srt_file_id
+narrator-ai-cli task create fast-writing --json -d @request.json
+# request.json:
+# {
+#   "learning_model_id": "...",
+#   "target_mode": "2",
+#   "playlet_name": "飞驰人生",
+#   "confirmed_movie_json": {
+#     "local_title": "<material.name>",
+#     "title": "<material.title>",
+#     "year": "<material.year>",
+#     "genre": "<material.type>",
+#     "summary": "<material.story_info>",
+#     "stars": <material.character_name (parsed array)>
+#   },
+#   "episodes_data": [{"srt_oss_key": "<material.srt_file_id>", "num": 1}],
+#   "model": "flash"
+# }
+
+# Case B: Not in pre-built materials, known movie (target_mode=1) — run search-movie in Step 0
+narrator-ai-cli task create fast-writing --json -d @request.json
+# request.json: {"learning_model_id": "...", "target_mode": "1", "playlet_name": "...",
+#   "confirmed_movie_json": {<from search-movie>}, "model": "flash"}
+
+# Case C: User's own SRT, known movie (target_mode=2) — run search-movie in Step 0 for confirmed_movie_json
+narrator-ai-cli task create fast-writing --json -d @request.json
+# request.json: {"learning_model_id": "...", "target_mode": "2", "playlet_name": "<drama name>",
+#   "confirmed_movie_json": {<from search-movie>}, "episodes_data": [{"srt_oss_key": "<uploaded srt file_id>", "num": 1}], "model": "flash"}
+
+# Case D: Obscure/new drama, user's own SRT (target_mode=3) — confirmed_movie_json optional
 narrator-ai-cli task create fast-writing --json -d '{
   "learning_model_id": "<from narration-styles>",
-  "target_mode": "2",
+  "target_mode": "3",
   "playlet_name": "<drama name>",
   "episodes_data": [{"srt_oss_key": "<uploaded srt file_id>", "num": 1}],
   "model": "flash"
@@ -286,7 +375,7 @@ narrator-ai-cli task create fast-writing --json -d '{
 | `learning_srt` | str | One of two | - | Reference SRT file_id (when no template available) |
 | `target_mode` | str | Yes | - | "1"=Hot Drama, "2"=Original Mix, "3"=New Drama |
 | `playlet_name` | str | Yes | - | Movie/drama name |
-| `confirmed_movie_json` | obj | mode=1 | - | From `search-movie` (MUST use search result) |
+| `confirmed_movie_json` | obj | mode=1,2; optional mode=3 | - | From material data (mode=2 pre-built) or `search-movie` result (mode=1, mode=2 user SRT). Never fabricate. |
 | `episodes_data` | list | mode=2,3 | - | [{srt_oss_key, num}] |
 | `model` | str | No | "pro" | "pro" (higher quality, 15pts/char) or "flash" (faster, 5pts/char) |
 | `language` | str | No | "Chinese (中文)" | Output language |
@@ -383,6 +472,56 @@ Optional: template_params (per-template params dict), mode (one_stop/staged), cl
 
 ## Standard Path Workflow
 
+### Step 0: Find Source Material
+
+> ⚠️ **Agent behavior**: Confirm the movie or drama name with the user before proceeding. Then run `material list --json --page 1 --size 100` to fetch pre-built materials. Check `total` in the response — if `total > 100`, fetch subsequent pages until all items are retrieved. **Search programmatically using `grep -i` or `python3 -c` piped from the JSON output — do NOT rely on the terminal display, which may be truncated and can miss items.**
+
+```bash
+narrator-ai-cli material list --json --page 1 --size 100
+# If total > 100, fetch more pages: --page 2 --size 100, etc.
+```
+
+Response structure:
+
+```json
+{
+  "total": 101,
+  "page": 1,
+  "size": 100,
+  "items": [
+    {
+      "id": "<material_id>",
+      "name": "极限职业",
+      "title": "Extreme Job",
+      "year": "2019",
+      "type": "喜剧片",
+      "story_info": "...",
+      "character_name": "[柳承龙 (Ryu Seung-ryong), 李荷妮 (Lee Ha-nee), ...]",
+      "cover": "https://...",
+      "video_file_id": "<video_file_id>",
+      "srt_file_id": "<srt_file_id>"
+    }
+  ]
+}
+```
+
+```bash
+# Search programmatically — do NOT rely on truncated terminal output:
+narrator-ai-cli material list --json --page 1 --size 100 | grep -i "目标影片名"
+narrator-ai-cli material list --json --page 1 --size 100 \
+  | python3 -c "import json, sys; items = json.load(sys.stdin).get('items', []); \
+[print(json.dumps(i, ensure_ascii=False)) for i in items if '关键词' in i.get('name','') or '关键词' in i.get('title','')]"
+```
+
+> `video_file_id` — the video file ID for this pre-built material (used as `video_oss_key` and `negative_oss_key`)
+> `srt_file_id` — the subtitle (SRT) file ID for this pre-built material (used as `srt_oss_key`)
+
+**Decision flow:**
+
+1. Fetch all pages (start with `--page 1 --size 100`, repeat if `total > fetched count`). **Search programmatically** using `grep -i` or `python3 -c` on the JSON output — do NOT scan the terminal display. Repeat per page until match found or all pages exhausted.
+2. **Found in pre-built materials** → use the material's `video_file_id` as `video_oss_key`/`negative_oss_key` and `srt_file_id` as `srt_oss_key` in `episodes_data` for Step 2 (generate-writing). No need to upload files.
+3. **Not found** → guide user to upload their own video and SRT files via `file upload` (see Prerequisites § Source Files). Use the returned `file_id` values as `video_oss_key`/`negative_oss_key` and `srt_oss_key` in `episodes_data`.
+
 ### Step 1: Popular Learning (optional if using pre-built template)
 
 ```bash
@@ -412,6 +551,15 @@ narrator-ai-cli task create popular-learning --json -d '{
 Alternatively, use a pre-built template `id` from `task narration-styles --json` as `learning_model_id` directly — **no popular-learning step needed**.
 
 ### Step 2: Generate Writing
+
+**Input**: Use `video_file_id` and `srt_file_id` determined in Step 0 to construct `episodes_data`:
+
+| `episodes_data` field | Source |
+|---|---|
+| `video_oss_key` | `video_file_id` from material (Step 0) or uploaded video `file_id` |
+| `negative_oss_key` | same as `video_oss_key` |
+| `srt_oss_key` | `srt_file_id` from material (Step 0) or uploaded SRT `file_id` |
+| `num` | episode number, starting from `1` |
 
 ```bash
 narrator-ai-cli task create generate-writing --json -d '{
@@ -600,11 +748,18 @@ CLI exits code 1 on any error, prints to stderr.
     │  Standard Path    │           Fast Path    │
     │                   │                        │
     ▼                   │                        ▼
- popular-learning       │              search-movie
- OUT: learning_model_id │              OUT: confirmed_movie_json
+ material list --json   │         material list --json
+ (local search)         │         (local search by title)
+ found → video_file_id  │         found → ask user: mode=1 or mode=2?
+         srt_file_id    │         mode=1: confirmed_movie_json from material
+ not found → file upload│         mode=2: confirmed_movie_json + episodes_data from material
+    │                   │         (both skip Step 0 / search-movie)
+    ▼                   │         not found → search-movie (Step 0) → target_mode=1
+ popular-learning       │         user SRT known → search-movie + target_mode=2
+ OUT: learning_model_id │         user SRT obscure → target_mode=3 (optional confirmed_movie_json)
  (or use template)      │                        │
-    │                   │                        ▼
-    ▼                   │              fast-writing
+    ▼                   │                        ▼
+    │                   │              fast-writing
  generate-writing       │              OUT: task_id, file_ids[0]
  OUT: task_id ─────────┬│                        │
     │                  ││                        ▼
@@ -631,7 +786,7 @@ CLI exits code 1 on any error, prints to stderr.
 
 ## ⚠️ Important Notes
 
-1. **Always `search-movie` before fast-writing with target_mode=1.** Never fabricate `confirmed_movie_json` — it produces nonsensical narration.
+1. **`confirmed_movie_json` is required for target_mode=1 and target_mode=2, optional for target_mode=3.** When a pre-built material is found, construct it from material fields directly (no `search-movie` needed). For mode=1 or mode=2 with user-uploaded SRT (no material), always run `search-movie` — never fabricate this value.
 2. **Source file_ids from `file list` or `material list`.** Never guess file_ids.
 3. **Tasks are async.** Create returns `task_id` → poll `task query <task_id> --json` until status `2` (success) or `3` (failed).
 4. **`search-movie` may take 60+ seconds** (Gradio backend, cached 24h). Set adequate timeout.
