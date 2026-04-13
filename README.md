@@ -6,7 +6,7 @@
 
 ## What is this?
 
-A machine-readable skill file (`SKILL.md`) that teaches AI agents how to use the [narrator-ai-cli](https://github.com/jieshuo-ai/narrator-ai-cli) tool for automated video narration production.
+A machine-readable skill file (`SKILL.md`) that teaches AI agents how to use the [narrator-ai-cli](https://github.com/GridLtd-ProductDev/narrator-ai-cli) tool for automated video narration production.
 
 ```
 You say: "Create a narration video for Pegasus in a comedy style"
@@ -31,10 +31,10 @@ In short: **CLI is the hands. Skill is the brain.** Together, the AI agent can p
 ### Step 1: Install the CLI tool
 
 ```bash
-pip install "narrator-ai-cli @ git+https://github.com/jieshuo-ai/narrator-ai-cli.git"
+pip install "narrator-ai-cli @ git+https://github.com/GridLtd-ProductDev/narrator-ai-cli.git"
 ```
 
-> See [narrator-ai-cli](https://github.com/jieshuo-ai/narrator-ai-cli) for detailed installation options.
+> See [narrator-ai-cli](https://github.com/GridLtd-ProductDev/narrator-ai-cli) for detailed installation options.
 
 ### Step 2: Configure API key
 
@@ -146,7 +146,7 @@ Once installed, use natural language:
 
 ## Links
 
-- 📦 [narrator-ai-cli CLI repo](https://github.com/jieshuo-ai/narrator-ai-cli)
+- 📦 [narrator-ai-cli CLI repo](https://github.com/GridLtd-ProductDev/narrator-ai-cli)
 - 📖 [Resource preview (Feishu Docs)](https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc)
 - 🦞 [OpenClaw agent framework](https://github.com/openclaw/openclaw)
 
