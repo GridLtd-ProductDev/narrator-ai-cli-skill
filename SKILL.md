@@ -442,28 +442,186 @@ Note: `type_name` is `video_composing` (no BGM) or `video_composing_2` (with BGM
 
 ### Step 4 (Optional): Magic Video — Visual Template
 
-> ⚠️ **Agent restriction**: Do NOT auto-create magic-video tasks. Only create when the user explicitly requests a visual template. Present available templates as options and let the user choose.
+> ⚠️ **Agent restriction**: Do NOT auto-create magic-video tasks. Only create when the user explicitly requests a visual template. Present the template catalog, explain options, let the user choose. Multiple templates can be selected — each produces a separate output video.
+
+**Visual Templates** is a value-added service applied after video composing:
+- Adds professional subtitle styles and branded layouts to the finished video
+- Multiple templates may be selected simultaneously (one output video per template)
+- Pricing: **30 points/minute** (based on output video duration)
+
+#### Template Catalog
+
+Fetch real-time template details (params, descriptions, pricing):
 
 ```bash
-# List templates first
-narrator-ai-cli task templates --json
+curl -X GET "https://openapi.jieshuo.cn/v2/task/commentary/get_magic_template_info" \
+    -H "app-key: $NARRATOR_APP_KEY"
+```
 
-# One-stop mode (from video-composing task_id)
+Templates are organized by distribution platform and aspect ratio:
+
+**油管 (YouTube)**
+
+| Aspect Ratio | Template Name | Configurable Params |
+|---|---|---|
+| 9:16 垂直 | 竖屏·合规剧集 | 主标题, 底部免责文案, 侧边警示语, 分集设置 |
+| 9:16 垂直 | 竖屏·柔光剧集 | 分集设置 |
+| 9:16 垂直 | 竖屏·模糊剧集 | 主标题, 分集设置 |
+| 9:16 垂直 | 竖屏·简约剧集 | 分集设置 |
+| 9:16 垂直 | 竖屏·黑金剧集 | 主标题, 副标题, 分集设置 |
+| 16:9 水平 | 横屏·沉浸剧集 | 分集设置 |
+| 16:9 水平 | 横屏·电影剧集 | 主标题, 副标题, 分集设置 |
+| 16:9 水平 | 横屏·简约剧集 | 分集设置 |
+
+**抖音 (TikTok / Douyin)**
+
+| Aspect Ratio | Template Name | Configurable Params |
+|---|---|---|
+| 1:1 矩形 | 方屏·简约剧集 | 主标题, 水印文案, 分集设置 |
+| 1:1 矩形 | 方屏·雅致剧集 | 主标题, 分集设置 |
+| 9:16 垂直 | 竖屏·流光剧集 | 顶部标语, 侧边文案, 分集设置 |
+
+**油管短视频 (YouTube Shorts)**
+
+| Aspect Ratio | Template Name | Configurable Params |
+|---|---|---|
+| 9:16 垂直 | 竖屏·精准剧集 | 分集设置 |
+| 9:16 垂直 | 竖屏·重磅剧集 | 副标题 ⚠️, 分集设置 |
+
+#### Template Param Reference
+
+> ⚠️ **Agent behavior**: When the user selects a template, proactively walk through each of its configurable params, explain what it controls, and ask the user for a value. Only proceed to task creation once every param is confirmed or explicitly left at default.
+
+> ⚠️ **Language awareness**: All text params (`main_title`, `sub_title`, `bottom_disclaimer_text`, `vertical_text_content`, `watermark_text`, `slogan`) have **Chinese default values hardcoded in the template** and do NOT auto-adapt to the target language. When the narration target language is **not Chinese**, the agent MUST:
+> 1. **Never submit Chinese default values.** Submitting Chinese defaults will result in Chinese text appearing in a non-Chinese video — this is always wrong.
+> 2. **Proactively provide localized values for every text param in the template.** Do not ask the user whether they want localization — assume yes and act on it.
+> 3. **Translate the standard defaults to the target language and confirm with the user before submitting.** Do not skip this — even if the user hasn't mentioned it. Required translations by language:
+>    - `bottom_disclaimer_text` default `本故事纯属虚构 请勿模仿` → e.g. English: `This story is purely fictional. Do not imitate.`
+>    - `vertical_text_content` default `影视效果 请勿模仿 合理安排生活` → e.g. English: `Cinematic effects only. Do not imitate. Manage your life wisely.`
+>    - `main_title`, `sub_title`, `watermark_text`, `slogan` — if left empty, AI may still generate Chinese; proactively ask for user input or suggest a translated value.
+> 4. **This rule applies even when the user does not explicitly mention language.** Infer the target language from the narration settings (the `language` param in fast-writing / generate-writing) and apply this rule accordingly.
+
+All params are optional — omitting them lets AI auto-generate where supported. The table below explains what each param does and **how to fill it appropriately**.
+
+---
+
+**`segment_count` — 分集设置** (`int`, present in all templates)
+
+Controls how the video is split into episodes:
+
+| Value | Behavior | When to use |
+|---|---|---|
+| `0` (default) | AI auto-determines episode count based on content length | Recommended for most cases; let AI decide |
+| `-1` | No splitting — output as a single video | When the source is short or the user wants one file |
+| `1`, `2`, `3`… | Force exactly N episodes | When the user has a specific series structure in mind |
+
+> Ask the user: "要分集吗？留 0 让 AI 自动判断，还是指定集数，或者 -1 不分集？"
+
+---
+
+**`main_title` — 主标题** (`string`, templates: 竖屏·合规剧集, 竖屏·模糊剧集, 竖屏·黑金剧集, 横屏·电影剧集, 方屏·简约剧集, 方屏·雅致剧集)
+
+The primary title displayed prominently on screen.
+
+- **Leave empty (recommended)**: AI generates the most fitting title from the content
+- **Fill in**: When the user wants a custom series name, channel brand name, or the AI-generated title doesn't meet their expectation
+- **Format tip**: Keep under 10–12 characters for vertical layouts; under 16 for horizontal. Avoid punctuation that may break layout.
+- ⚠️ **Non-Chinese language**: When the narration language is not Chinese, leaving this empty may cause AI to generate a Chinese title. Proactively ask the user for a title in the target language, or suggest the movie/drama name in that language as a starting point.
+
+> Ask the user: "主标题要自定义吗？留空则由 AI 根据剧情自动生成，也可以填写剧名或系列名。" — **If narration is not Chinese**: ask for the title in the target language. Do not leave blank without confirming that the user accepts a potentially Chinese AI-generated value.
+
+---
+
+**`sub_title` — 副标题** (`string`, templates: 竖屏·黑金剧集, 横屏·电影剧集, 竖屏·重磅剧集)
+
+Secondary text displayed near the main title.
+
+- **Leave empty (recommended)**: AI auto-generates a short tagline
+- **Fill in**: When the user wants a specific promotional slogan or episode label (e.g., `第一季`, `独家首播`)
+- ⚠️ **Special behavior in 竖屏·重磅剧集**: filling `sub_title` will **completely override the main title display** — the value you enter replaces whatever would appear as the main title. Only fill this if the user specifically wants to override the title.
+- ⚠️ **Non-Chinese language**: When the narration language is not Chinese, leaving this empty may cause AI to generate a Chinese tagline. Proactively ask the user for a subtitle in the target language.
+
+> Ask the user: "副标题要自定义吗？（竖屏·重磅剧集 注意：填写后会直接替换主标题显示）" — **If narration is not Chinese**: ask for the subtitle in the target language. Do not leave blank without confirming.
+
+---
+
+**`bottom_disclaimer_text` — 底部免责文案** (`string`, template: 竖屏·合规剧集 only)
+
+Disclaimer text pinned to the bottom of the screen — required for compliance on many platforms.
+
+- **Chinese narration — keep default**: Default value is `本故事纯属虚构 请勿模仿` — covers standard platform compliance requirements
+- **Non-Chinese narration — MUST translate**: The default is Chinese and will display as Chinese text in a non-Chinese video. Translate to the target language (e.g. English: `This story is purely fictional. Do not imitate.`) and confirm with the user before submitting. **Do not submit the Chinese default for non-Chinese narration.**
+- **Customize**: When the user's content has a specific legal disclaimer or the platform requires different wording
+- **Do not leave blank**: An empty value removes the disclaimer, which may cause compliance issues on distribution platforms
+
+> **Chinese narration**: "底部免责文案保留默认「本故事纯属虚构 请勿模仿」就好，有特殊合规需求才需要改。" — **Non-Chinese narration**: Translate the default to the target language, show the translated value to the user, and ask for confirmation or edits before submitting.
+
+---
+
+**`vertical_text_content` — 侧边警示语 / 侧边文案** (`string`, templates: 竖屏·合规剧集, 竖屏·流光剧集)
+
+Vertical text displayed along the side edge of the screen.
+
+- **Chinese narration — keep default**: Default is `影视效果 请勿模仿 合理安排生活` — standard compliance phrasing
+- **Non-Chinese narration — MUST translate**: The default is Chinese and will display as Chinese text in a non-Chinese video. Translate to the target language (e.g. English: `Cinematic effects only. Do not imitate. Manage your life wisely.`) and confirm with the user before submitting. **Do not submit the Chinese default for non-Chinese narration.**
+- **Customize**: When the user wants a channel-specific watermark phrase or branded vertical tagline
+- **Format tip**: Keep concise; the text renders vertically, so shorter phrases look cleaner
+
+> **Chinese narration**: "侧边文案保留默认合规文案即可，如需换成频道专属文案可以自定义。" — **Non-Chinese narration**: Translate the default to the target language, show the translated value to the user, and ask for confirmation or edits before submitting.
+
+---
+
+**`watermark_text` — 水印文案** (`string`, template: 方屏·简约剧集 only)
+
+Copyright/brand text that roams randomly across the frame as a floating watermark.
+
+- **Leave empty**: No watermark displayed
+- **Fill in**: When the user wants copyright protection or channel branding (e.g., `@ChannelName`, `© Studio Name`)
+- **Format tip**: Short phrases work best (under 15 characters); long text may look cluttered as it moves across the frame
+- ⚠️ **Non-Chinese language**: If the user wants a watermark, the value must be in the target language — do not suggest or default to Chinese channel names or copyright phrasing.
+
+> Ask the user: "要加水印吗？可以填频道名或版权信息，留空则不显示水印。" — **If narration is not Chinese**: ask for the watermark text in the target language.
+
+---
+
+**`slogan` — 顶部标语** (`string`, template: 竖屏·流光剧集 only)
+
+Custom text that fills the entire top title bar, overriding whatever the AI would generate.
+
+- **Leave empty (recommended)**: AI auto-generates a contextually appropriate top title
+- **Fill in**: Only when the user has a fixed brand slogan or exclusive tagline they want locked in. Once filled, AI title generation for this slot is completely bypassed.
+- ⚠️ **Non-Chinese language**: When the narration language is not Chinese, leaving this empty may cause AI to generate a Chinese slogan. Proactively ask the user whether they have a fixed slogan in the target language; if not, recommend leaving it empty only after confirming the user accepts a potentially Chinese AI-generated value.
+
+> Ask the user: "顶部标语要固定吗？填写后会完全覆盖 AI 标题，适合有固定频道 slogan 的创作者。" — **If narration is not Chinese**: ask for the slogan in the target language, or explicitly warn the user that AI may generate Chinese if left blank.
+
+#### Creating a Magic Video
+
+Input is the `task_id` returned from video-composing (step 3).
+
+> ⚠️ **Agent behavior — mandatory pre-submission confirmation**: Before running any `magic-video` create command, the agent MUST display the full request parameters to the user in a readable format (templates selected, all `template_params` values for each template), then explicitly ask: "以上是即将提交的视觉模版参数，确认无误后继续？" (or in the narration target language if not Chinese). Do NOT submit until the user confirms. This step is required every time, without exception.
+
+```bash
+# Without custom params (AI handles all defaults)
 narrator-ai-cli task create magic-video --json -d '{
   "task_id": "<task_id from step 3>",
-  "template_name": ["template_name"]
+  "template_name": ["竖屏·黑金剧集", "横屏·电影剧集"]
 }'
 
-# Staged mode (from clip-data/fast-clip-data file_ids[0])
+# With custom params — key is template name, value is a params dict
 narrator-ai-cli task create magic-video --json -d '{
-  "file_id": "<file_ids[0] from clip-data or fast-clip-data results>",
-  "template_name": ["template_name"]
+  "task_id": "<task_id from step 3>",
+  "template_name": ["竖屏·合规剧集"],
+  "template_params": {
+    "竖屏·合规剧集": {
+      "segment_count": 0,
+      "bottom_disclaimer_text": "本故事纯属虚构 请勿模仿",
+      "vertical_text_content": "影视效果 请勿模仿 合理安排生活"
+    }
+  }
 }'
 ```
 
-Optional: template_params (per-template params dict), mode (one_stop/staged), clip_data (JSON object for staged mode)
-
-**Output**: sub_tasks with rendered video URLs
+**Output**: `sub_tasks` array — one entry per template, each with a rendered video URL
 
 ## Standard Path Workflow
 
