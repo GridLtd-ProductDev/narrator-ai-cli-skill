@@ -488,9 +488,9 @@ Templates are organized by distribution platform and aspect ratio:
 >    - `bottom_disclaimer_text` default `本故事纯属虚构 请勿模仿` → e.g. English: `This story is purely fictional. Do not imitate.`
 >    - `vertical_text_content` default `影视效果 请勿模仿 合理安排生活` → e.g. English: `Cinematic effects only. Do not imitate. Manage your life wisely.`
 >    - `main_title`, `sub_title`, `watermark_text`, `slogan` — if left empty, AI may still generate Chinese; proactively ask for user input or suggest a translated value.
-> 4. **This rule applies even when the user does not explicitly mention language.** Infer the target language from the narration settings (the `language` param in fast-writing / generate-writing) and apply this rule accordingly.
+> 4. **This rule applies even when the user does not explicitly mention language.** The target language flows through the entire pipeline as a single chain: **dubbing voice language → narration script `language` param → magic-video template text params.** If the dubbing voice is non-Chinese, all three must be set to the matching language. Never treat these as independent decisions.
 > 5. **All user-facing questions in this section (the "Ask the user" prompts below) must be asked in the same language as the ongoing conversation.** Do not default to Chinese if the conversation is in another language.
-> 6. **Scope note**: This rule governs magic-video **template text params** only. The `language` param in fast-writing / generate-writing controls the narration script language and is handled separately. Both must be set correctly for a fully localized output.
+> 6. **Scope note**: This rule governs magic-video **template text params** only. The `language` param in fast-writing / generate-writing controls the narration script language and is handled at the writing step. Both are downstream consequences of the dubbing language selection and must be consistent.
 
 All params are optional — omitting them lets AI auto-generate where supported. The table below explains what each param does and **how to fill it appropriately**.
 
