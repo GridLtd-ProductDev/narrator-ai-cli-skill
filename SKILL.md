@@ -1,6 +1,6 @@
 ---
 name: narrator-ai-cli
-version: "1.0.2"
+version: "1.0.3"
 license: MIT
 description: >-
   AI电影解说视频自动生成技能（AI解说大师 CLI Skill）。当用户需要创建电影解说视频、短剧解说、影视二创、AI配音旁白视频、film commentary、video narration、drama dubbing、movie narration时触发。内置93部电影素材、146首BGM、63种配音音色（11种语言）、90+解说模板。通过narrator-ai-cli命令行工具实现：搜片选片→选择模板→选BGM→选配音→生成文案→合成视频的全流程自动化。CLI client for Narrator AI (AI解说大师) video narration API. Use when user needs to create AI narration videos, manage narration tasks, browse dubbing/BGM/material resources, or automate video production.
@@ -370,7 +370,7 @@ narrator-ai-cli task create fast-writing --json -d '{
 | `webhook_token` | str | No | - | Callback authentication token |
 | `webhook_data` | str | No | - | Passthrough data for callback |
 
-**Output**: Creation response contains only `data.task_id`. Poll `task query <task_id> --json` until `status=2`. The completed task response contains `file_ids`:
+**Output**: Creation response contains only `data.task_id`. Poll `task query <task_id> --json` every 5 seconds until `status=2`. The completed task response contains `file_ids`:
 
 ```json
 {
@@ -405,7 +405,7 @@ narrator-ai-cli task create fast-clip-data --json -d '{
 {"code": 10000, "message": "", "data": {"task_id": ""}}
 ```
 
-Save `data.task_id`. Poll `task query <task_id> --json` until `status=2`. On success, read `task_order_num` from the task record — this is the `order_num` required for video-composing (step 3).
+Save `data.task_id`. Poll `task query <task_id> --json` every 5 seconds until `status=2`. On success, read `task_order_num` from the task record — this is the `order_num` required for video-composing (step 3).
 
 ### Step 3: Video Composing
 
@@ -417,7 +417,7 @@ narrator-ai-cli task create video-composing --json -d '{
 }'
 ```
 
-**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `video_url` from results:
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` every 5 seconds until `status=2`. Extract `video_url` from results:
 
 ```json
 {
@@ -640,7 +640,7 @@ narrator-ai-cli task create popular-learning --json -d '{
 
 **model_version**: `advanced` (高级版) or `standard` (标准版)
 
-**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Parse `task_result` JSON string → `agent_unique_code` is the `learning_model_id`:
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` every 5 seconds until `status=2`. Parse `task_result` JSON string → `agent_unique_code` is the `learning_model_id`:
 
 ```json
 {
@@ -679,7 +679,7 @@ Optional: `refine_srt_gaps` (bool) — enables AI scene analysis. **Only set to 
 
 > ⚠️ **Language linkage**: If the selected dubbing voice is non-Chinese, add `"language": "<target language>"` to this request to match. Do not omit this param for non-Chinese dubbing — the default is Chinese.
 
-**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` until `status=2`. Extract `task_result` (narration script file path) and `order_info` from results:
+**Output**: On creation returns `data.task_id`. Poll `task query <task_id> --json` every 5 seconds until `status=2`. Extract `task_result` (narration script file path) and `order_info` from results:
 
 ```json
 {
@@ -713,7 +713,7 @@ narrator-ai-cli task create clip-data --json -d '{
 {"code": 10000, "message": "", "data": {"task_id": ""}}
 ```
 
-Save `data.task_id`. Poll `task query <task_id> --json` until `status=2`. On success, read `task_order_num` from the task record — this is the `order_num` required for video-composing (step 4).
+Save `data.task_id`. Poll `task query <task_id> --json` every 5 seconds until `status=2`. On success, read `task_order_num` from the task record — this is the `order_num` required for video-composing (step 4).
 
 ### Step 4-5: Video Composing & Magic Video
 
@@ -740,8 +740,31 @@ Optional: clone_model (default: pro). Output: task_id with audio result.
 
 ## Task Management
 
+> ⚠️ **Agent behavior — standard polling pattern**: Always use the `while` loop below when monitoring a task. Never use a `for` loop with a fixed iteration count (it may exhaust before the task finishes). The loop below runs until status `2` (success) or `3` (failed) and cannot be silently interrupted mid-run.
+
 ```bash
-# Query task status (poll until status 2=success or 3=failed)
+# Standard polling loop — use this every time a task needs to be monitored
+TASK_ID="<task_id>"
+while true; do
+  result=$(narrator-ai-cli task query "$TASK_ID" --json 2>&1)
+  status=$(echo "$result" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    tasks = d.get('tasks') or d.get('data', {}).get('tasks', [])
+    print(tasks[0].get('status', '') if tasks else '')
+except Exception:
+    print('')
+" 2>/dev/null)
+  echo "[$(date '+%H:%M:%S')] task=$TASK_ID status=$status"
+  [ "$status" = "2" ] && echo "Done." && break
+  [ "$status" = "3" ] && echo "Failed:" && echo "$result" && break
+  sleep 5
+done
+```
+
+```bash
+# Single query (for spot-checks only — do not use in automated polling)
 narrator-ai-cli task query <task_id> --json
 
 # List tasks with filters
@@ -894,7 +917,7 @@ CLI exits code 1 on any error, prints to stderr.
 
 1. **`confirmed_movie_json` is required for target_mode=1 and target_mode=2, optional for target_mode=3.** When a pre-built material is found, construct it from material fields directly (no `search-movie` needed). For mode=1 or mode=2 with user-uploaded SRT (no material), always run `search-movie` — never fabricate this value.
 2. **Source file_ids from `file list` or `material list`.** Never guess file_ids.
-3. **Tasks are async.** Create returns `task_id` → poll `task query <task_id> --json` until status `2` (success) or `3` (failed).
+3. **Tasks are async.** Create returns `task_id` → poll `task query <task_id> --json` every **5 seconds** until status `2` (success) or `3` (failed). Most tasks complete in 30 seconds to several minutes; do not poll faster than 5 s to avoid unnecessary API load.
 4. **`search-movie` may take 60+ seconds** (Gradio backend, cached 24h). Set adequate timeout.
 5. **video-composing always uses `task_order_num` from the immediately preceding clip step** as its `order_num` param — clip-data in Standard Path, fast-clip-data in Fast Path. Never use the writing step's order_num.
 6. **Prefer pre-built narration templates** over running popular-learning. Use `task narration-styles --json` to list, browse https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc for preview.
