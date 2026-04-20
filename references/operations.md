@@ -73,18 +73,18 @@ narrator-ai-cli task list --category commentary --json
 # Estimate point cost before creating
 narrator-ai-cli task budget --json -d '{
   "learning_model_id": "<id>",
-  "native_video": "<file_id>",
-  "native_srt": "<file_id>"
+  "native_video": "<video_file_id>",
+  "native_srt": "<srt_file_id>"
 }'
 # Returns: viral_learning_points, commentary_generation_points,
 #          video_synthesis_points, visual_template_points, total_consume_points
 
 # Verify materials before task creation
 narrator-ai-cli task verify --json -d '{
-  "bgm": "<file_id>",
+  "bgm": "<bgm_id>",
   "dubbing_id": "<voice_id>",
-  "native_video": "<file_id>",
-  "native_srt": "<file_id>"
+  "native_video": "<video_file_id>",
+  "native_srt": "<srt_file_id>"
 }'
 # Returns: is_valid (bool), errors (list), warnings (list)
 

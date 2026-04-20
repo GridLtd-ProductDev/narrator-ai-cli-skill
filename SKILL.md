@@ -192,9 +192,9 @@ Detailed list commands, response shapes, and field mappings live in `references/
 **Step 0 — Find source material & determine `target_mode`:**
 
 1. List materials: `narrator-ai-cli material list --json --page 1 --size 100`. Search programmatically with `grep -i` or `python3 -c` on the JSON output — do **NOT** rely on the terminal display (may be truncated). Paginate (`--page 2`, etc.) until exhausted if `total > 100`.
-2. **Found in materials** → ask user: pure narration (`mode=1`) or original mix (`mode=2`)? Construct `confirmed_movie_json` from material fields (mapping in `references/resources.md`).
-3. **Not found, known title** → `task search-movie "<name>" --json` → `mode=1` (or `mode=2` if user uploads SRT). May take 60+ seconds (Gradio backend, results cached 24h).
-4. **Obscure / new content** → `mode=3` with user's uploaded SRT. `confirmed_movie_json` optional.
+2. **Found in materials** → ask user: pure narration (`target_mode=1`) or original mix (`target_mode=2`)? Construct `confirmed_movie_json` from material fields (mapping in `references/resources.md`).
+3. **Not found, known title** → `task search-movie "<name>" --json` → `target_mode=1` (or `target_mode=2` if user uploads SRT). May take 60+ seconds (Gradio backend, results cached 24h).
+4. **Obscure / new content** → `target_mode=3` with user's uploaded SRT. `confirmed_movie_json` optional.
 
 **Step 1 — fast-writing**: pass `learning_model_id`, `target_mode`, `playlet_name`, `confirmed_movie_json` and/or `episodes_data`, `model` (`flash` 5pts/char or `pro` 15pts/char). Save `task_id` from the **creation response**, then poll until `status=2` and save `file_ids[0]` from the completed task.
 

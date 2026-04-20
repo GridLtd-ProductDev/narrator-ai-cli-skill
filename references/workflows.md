@@ -10,12 +10,12 @@ Full parameter tables and JSON request examples for both pipelines. The high-lev
 
 Decision flow (see `resources.md` for the material-list command and programmatic search):
 
-1. **Found in pre-built materials** → construct `confirmed_movie_json` from material fields (mapping in `resources.md`). Ask user which mode:
-   - **`mode=1` 纯解说 (Pure narration)**: only metadata (title, synopsis, cast). Faster, no subtitle processing. Best when narration can be written from plot knowledge alone. **No `episodes_data`.**
-   - **`mode=2` 原声混剪 (Original mix)**: uses the actual subtitle track (`srt_file_id`) to align narration with original dialogue. More authentic. Requires `episodes_data` with `srt_oss_key = material.srt_file_id`.
-2. **Not found, known movie/drama** → run `task search-movie` (below) → `mode=1` with the returned `confirmed_movie_json`. **No `episodes_data`.**
-3. **Not found, user provides their own SRT (known movie)** → run `task search-movie` for `confirmed_movie_json` → `mode=2`. Use uploaded SRT as `srt_oss_key` in `episodes_data`.
-4. **Obscure / new drama, user provides SRT** → `mode=3`. `confirmed_movie_json` optional. Use uploaded SRT in `episodes_data`.
+1. **Found in pre-built materials** → construct `confirmed_movie_json` from material fields (mapping in `resources.md`). Ask user which `target_mode`:
+   - **`target_mode=1` 纯解说 (Pure narration)**: only metadata (title, synopsis, cast). Faster, no subtitle processing. Best when narration can be written from plot knowledge alone. **No `episodes_data`.**
+   - **`target_mode=2` 原声混剪 (Original mix)**: uses the actual subtitle track (`srt_file_id`) to align narration with original dialogue. More authentic. Requires `episodes_data` with `srt_oss_key = material.srt_file_id`.
+2. **Not found, known movie/drama** → run `task search-movie` (below) → `target_mode=1` with the returned `confirmed_movie_json`. **No `episodes_data`.**
+3. **Not found, user provides their own SRT (known movie)** → run `task search-movie` for `confirmed_movie_json` → `target_mode=2`. Use uploaded SRT as `srt_oss_key` in `episodes_data`.
+4. **Obscure / new drama, user provides SRT** → `target_mode=3`. `confirmed_movie_json` optional. Use uploaded SRT in `episodes_data`.
 
 **`search-movie` command** (only for cases 2 and 3 above; never fabricate its output):
 
@@ -247,7 +247,7 @@ narrator-ai-cli task create generate-writing --json -d '{
 > 3. `target_character_name ... Input should be a valid string` → add `"target_character_name": "<name or empty string>"`
 > 4. `第N个剧集缺少必要字段: negative_oss_key` → ensure every `episodes_data` entry contains all of `video_oss_key`, `srt_oss_key`, `negative_oss_key`, `num`
 
-> ⚠️ **Language linkage**: If the selected dubbing voice is non-Chinese, add `"language": "<target language>"` to this request. Default is Chinese; do NOT omit when using a non-Chinese voice. (See SKILL.md § Resource Selection Protocol § Language linkage.)
+> ⚠️ **Language linkage**: If the selected dubbing voice is non-Chinese, add `"language": "<target language>"` to this request. Default is Chinese; do NOT omit when using a non-Chinese voice. (See SKILL.md § Agent Rules — "Honor the language chain".)
 
 **Output**: Poll until `status=2`. The completed response includes:
 
