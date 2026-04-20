@@ -91,6 +91,42 @@ Config: `~/.narrator-ai/config.yaml` (mode 0600). Server defaults to `https://op
 | **learning_model_id** | Narration style model — from a pre-built template (90+) or `popular-learning` result |
 | **learning_srt** | Reference SRT file_id. **Mutually exclusive** with `learning_model_id` |
 
+## Conversation Initiation
+
+> ⚠️ **Agent behavior — first message of a session**: Before asking the user for a movie title or workflow path, **proactively orient them** about what the skill offers. Most users assume they need to upload their own video + SRT and don't realize a pre-built material library ships with the skill. Skipping this step often results in unnecessary uploads or aborted sessions.
+
+**Required opening (adapt to the conversation language):**
+
+1. **Lead with the pre-built material library.** Mention upfront that ~100 ready-to-use movies are available with video + SRT already loaded — no upload needed in most cases.
+2. **Offer three concrete entry points** (let the user pick one):
+   - "I have a specific movie in mind" → take the title, search materials first, fall back to `task search-movie` only if not found
+   - "Show me what's available" → run `material list --json` and present 5–8 titles spanning varied genres; offer to filter by genre on request
+   - "I'll upload my own video + SRT" → guide through `file upload`
+3. **Defer the Fast vs Standard path question** until source material is confirmed. Asking both at once forces a decision the user has no context for yet.
+4. **Optionally share the visual resources preview link** (BGM / dubbing / templates browseable visually): https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc — but only if the user wants to browse, not as a wall of links upfront.
+
+**Example opening (Chinese conversation):**
+
+> 你好，欢迎使用 AI 解说大师。这个技能可以帮你生成电影/短剧解说视频。我这边内置了约 100 部电影素材（视频 + 字幕都是现成的），所以大多数情况你**不需要自己上传任何文件**。
+>
+> 你想怎么开始？
+> 1. **直接告诉我片名** — 我先查内置素材库，没有再去外部搜
+> 2. **让我列一些内置素材** — 你可以按类型挑（喜剧 / 动作 / 悬疑 / 科幻…）
+> 3. **自己上传视频 + 字幕** — 我引导你完成上传流程
+
+After source material is confirmed, walk the user through the **decision sequence below — one question per turn, in order**. Do NOT collapse multiple decisions into one message; users cannot reason about `target_mode` before they've picked a path.
+
+**Decision sequence** (each step waits for explicit user confirmation):
+
+1. **Source material** — covered above.
+2. **Workflow path** — Fast (原创文案) or Standard (二创文案). See "Two Workflow Paths" below.
+3. **`target_mode`** — *only ask if path = Fast*. Choose mode 1 / 2 / 3 (see "Fast Path internal: `target_mode`" below). If path = Standard, **skip this question entirely** — Standard Path has no `target_mode`.
+4. **BGM** → **Dubbing voice** → **Narration template** — see "Resource Selection Protocol".
+
+> ⚠️ **Anti-pattern (do NOT do this)**:
+> Asking "① 解说模式 (纯解说/原声混剪) ② 制作路线 (快速/标准)" in the same message.
+> `纯解说` and `原声混剪` are **Fast Path internal modes** (target_mode 1 vs 2). They do not exist in Standard Path. Asking them alongside the path choice forces the user to make decisions in the wrong order and conflates two layers of the decision tree.
+
 ## Two Workflow Paths
 
 Two end-to-end paths produce a finished narrated video. Choose with the user before starting.
@@ -104,9 +140,11 @@ Two end-to-end paths produce a finished narrated video. Choose with the user bef
 \* magic-video is optional; only on explicit user request.
 \*\* popular-learning is skippable when using a pre-built template (recommended).
 
-> ⚠️ **Always ask the user which path to use** before starting. Do not auto-select.
+> ⚠️ **Path is a standalone decision** — ask the user "Fast or Standard?" by itself, in its own message. Do not auto-select. Do not bundle it with `target_mode` or any other follow-up question.
 
-### Fast Path `target_mode` (chooses fast-writing input shape)
+### Fast Path internal: `target_mode` (ask only after path=Fast is confirmed)
+
+> Skip this section entirely if the user picked Standard Path — `target_mode` only exists inside fast-writing.
 
 | Mode | Use when | Required input |
 |---|---|---|
