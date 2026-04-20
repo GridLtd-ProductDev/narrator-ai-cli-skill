@@ -59,7 +59,7 @@ This file covers decision flow, the common workflow, and pointers. Detailed look
 > **Never:**
 > - **Submit `magic-video` without showing the full request body** (templates + every `template_params` value) and getting user confirmation. The cost is 30 pts/minute and irreversible.
 > - **Submit Chinese default values for `magic-video` text params when narration language is non-Chinese.** The defaults are hardcoded Chinese and will appear as Chinese text in a non-Chinese video.
-> - **Use the 32-char hex `order_num` from any task record.** That's an internal hash. The value you want is `task_order_num` (prefixed string). Submitting hex returns `10001 任务关联记录数据异常`.
+> - **Submit `.task_id` (32-char hex) as `order_num`.** Downstream tasks want `.task_order_num` (the prefixed string like `generate_writing_xxxxx`), not `.task_id`. Submitting the hex returns `10001 任务关联记录数据异常`. The other look-alike — `.results.order_info.order_num` (`script_xxxxx`) — is also wrong; see `references/operations.md` § Task Query Response Shape.
 
 ## Installation
 
@@ -98,8 +98,8 @@ Config: `~/.narrator-ai/config.yaml` (mode 0600). Server defaults to `https://op
 
 | Concept | Description |
 |---|---|
-| **file_id** | UUID for uploaded files. Via `file upload` or task results |
-| **task_id** | UUID returned on task creation. Poll with `task query` |
+| **file_id** | 32-char hex string for uploaded files. Via `file upload` or task results |
+| **task_id** | 32-char hex string returned on task creation. Poll with `task query` |
 | **task_order_num** | Assigned after task creation. Used as `order_num` for downstream tasks |
 | **files[]** | Output files in the completed task response (flat, top-level array). Each entry has `file_id`, `file_path`, `suffix`. Read `.files[0].file_id` for the next step's input |
 | **learning_model_id** | Narration style model — from a pre-built template (90+) or `popular-learning` result |
