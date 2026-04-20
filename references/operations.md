@@ -4,6 +4,30 @@ Reference for task polling, task management commands, file operations, user/acco
 
 ---
 
+## Task Query Response Shape
+
+`narrator-ai-cli task query <task_id> --json` returns a **flat** object. The top level is the task envelope; `results.tasks[]` is a nested array of sub-tasks with a different status code system. Reading the wrong path is the #1 cause of silent infinite polling.
+
+| Path | Type | What it is |
+|---|---|---|
+| `.status` | int (0–4) | **Task-level status — what polling reads.** See "Task status codes" below |
+| `.task_id` | str (32-char hex) | Same id you passed to `task query` |
+| `.task_order_num` | str (prefixed, e.g. `generate_writing_xxxxx`) | **Pass this as `order_num` to downstream tasks.** Never pass `.task_id` (hex) instead |
+| `.completed_at` | str / null | ISO timestamp once `status=2` |
+| `.consumed_points` | float | Billing amount actually charged |
+| `.files[]` | list | Output files. Each entry: `{file_id, file_path, file_name, suffix, ...}` |
+| `.files[0].file_id` | str | **The output `file_id` to pass to the next step** (e.g. fast-writing's narration script → fast-clip-data) |
+| `.results.tasks[0].video_url` | str | Finished MP4 URL (video-composing only) |
+| `.results.tasks[0].task_result` | str | Output path or JSON string. For writing tasks: narration script path. For popular-learning: JSON containing `agent_unique_code` |
+| `.results.tasks[0].status` | int (different system, e.g. `9`) | **Sub-task status. Do NOT poll on this — it uses a different code system from `.status`** |
+| `.results.order_info.order_num` | str (e.g. `script_xxxxx`) | Billing-side identifier. **NOT** what downstream tasks accept — submitting it returns `10001` |
+
+> ⚠️ **Two `status` fields exist.** Top-level `.status` (0–4) is what polling watches. Nested `.results.tasks[0].status` uses a different code system (e.g. `9` on success). Polling against the nested one returns nonsense values and loops forever.
+>
+> ⚠️ **Two `order_num`-shaped fields exist.** Top-level `.task_order_num` (prefixed string like `generate_writing_xxxxx` / `fast_writing_clip_data_xxxxx`) is what downstream tasks accept. Nested `.results.order_info.order_num` (`script_xxxxx`) is a billing-side id and is rejected. Also: `.task_id` is a 32-char hex string — never submit it as `order_num`, returns `10001 任务关联记录数据异常`.
+
+---
+
 ## Task Polling
 
 > ⚠️ **Agent behavior — standard polling pattern**: Always use the `while` loop below when monitoring a task. **Never** use a `for` loop with a fixed iteration count — it may exhaust before the task finishes. The loop runs until status `2` (success) or `3` (failed) and cannot be silently interrupted mid-run.
@@ -25,8 +49,7 @@ while [ "$iter" -lt "$MAX_ITERATIONS" ]; do
 import json, sys
 try:
     d = json.load(sys.stdin)
-    tasks = d.get('tasks') or d.get('data', {}).get('tasks', [])
-    print(tasks[0].get('status', '') if tasks else '')
+    print(d.get('status', ''))   # top-level field — see 'Task Query Response Shape' above
 except Exception:
     print('')
 " 2>/dev/null)
@@ -63,7 +86,7 @@ done
    ```bash
    narrator-ai-cli task query "$TASK_ID" --json | python3 -m json.tool
    ```
-   If `tasks[0].status` is already `2`, the task finished while you weren't watching — read result fields (`file_ids`, `task_order_num`, `video_url`, etc.) directly and continue to the next step. No need to re-poll.
+   If top-level `.status` is already `2`, the task finished while you weren't watching — read the result fields (`.task_order_num`, `.files[0].file_id`, `.results.tasks[0].video_url`, etc. — see "Task Query Response Shape" above) directly and continue to the next step. No need to re-poll.
 
 2. **Re-enter the loop** with the same `TASK_ID` if status is still `0` or `1`. The API has no notion of "who is polling" — re-querying simply returns the latest state.
 

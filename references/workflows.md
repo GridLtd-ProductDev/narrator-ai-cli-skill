@@ -89,20 +89,24 @@ narrator-ai-cli task create fast-writing --json -d @request.json
 | `webhook_token` | str | No | - | Callback authentication token |
 | `webhook_data` | str | No | - | Passthrough data for callback |
 
-**Output**: Creation response contains only `data.task_id`. Poll `task query <task_id> --json` every 5 s until `status=2`. The completed response contains `file_ids`:
+**Output**: Creation response contains `data.task_id`. Poll `task query <task_id> --json` every 5 s until top-level `.status=2`. The completed response (flat object — see `operations.md` § Task Query Response Shape):
 
 ```json
 {
-  "tasks": [{
-    "task_id": "<task_id>",
-    "task_order_num": "fast_writing_xxxxx",
-    "order_num": "<32-char hex internal hash — NOT used downstream>"
+  "task_id": "<32-char hex>",
+  "task_order_num": "fast_writing_xxxxx",
+  "status": 2,
+  "completed_at": "2026-...",
+  "files": [{
+    "file_id": "<narration script file_id>",
+    "file_path": "user_data/.../narration.txt",
+    "suffix": ".txt"
   }],
-  "file_ids": ["<file_id>"]
+  "results": {"tasks": [{"task_result": "user_data/.../narration.txt"}]}
 }
 ```
 
-**Save**: `task_id` from the **creation response** (input to fast-clip-data), and `file_ids[0]` from the **completed poll response** (also input to fast-clip-data).
+**Save**: `task_id` from the **creation response** (input to fast-clip-data), and `.files[0].file_id` from the **completed poll response** (also input to fast-clip-data as `file_id`).
 
 ### Step 2 — fast-clip-data
 
@@ -122,36 +126,41 @@ narrator-ai-cli task create fast-clip-data --json -d '{
 }'
 ```
 
-**Output**: Creation response → `data.task_id`. Poll until `status=2`. The completed task record contains **two different fields with similar names** — pick the right one:
+**Output**: Creation response → `data.task_id`. Poll until top-level `.status=2`. The completed response has **multiple `order_num`-shaped fields** — pick the right one (see `operations.md` § Task Query Response Shape for full structure):
 
-| Field in `tasks[0]` | Format | Use as next step's `order_num`? |
+| Path in response | Format | Use as video-composing's `order_num`? |
 |---|---|---|
-| `task_order_num` | `fast_writing_clip_data_xxxxx` (prefixed string) | ✅ **YES — this is what video-composing wants** |
-| `order_num` | `2c95333519417a28b0d9d754fc6b8cc5` (32-char hex) | ❌ Internal hash. Submitting this returns error `10001 任务关联记录数据异常` |
+| `.task_order_num` (top-level) | `fast_writing_clip_data_xxxxx` (prefixed string) | ✅ **YES — this is what video-composing wants** |
+| `.task_id` (top-level) | `2c95333519417a28b0d9d754fc6b8cc5` (32-char hex) | ❌ Submitting hex returns `10001 任务关联记录数据异常` |
+| `.results.order_info.order_num` (nested) | `script_xxxxx` | ❌ Billing-side identifier — also rejected by video-composing |
 
 ### Step 3 — video-composing
 
-> ⚠️ **Field name collision warning**: video-composing's input parameter is also named `order_num`, but its **value** must be the `task_order_num` field from Step 2's task record — NOT the `order_num` field. They have the same parameter name but different semantics. If you submit the hex `order_num`, the API returns `10001 任务关联记录数据异常`.
+> ⚠️ **Field name collision warning**: video-composing's input parameter is named `order_num`, but its **value** must be the **top-level `.task_order_num`** field from Step 2's polled response — NOT `.task_id` (32-char hex) and NOT `.results.order_info.order_num` (`script_xxxxx`). Submitting either of the wrong values returns `10001`.
 
 ```bash
 narrator-ai-cli task create video-composing --json -d '{
-  "order_num": "<value of tasks[0].task_order_num from Step 2 — looks like fast_writing_clip_data_xxxxx>"
+  "order_num": "<value of top-level .task_order_num from Step 2 — looks like fast_writing_clip_data_xxxxx>"
 }'
 ```
 
-**`order_num` is the only required parameter.** Its value = fast-clip-data's `tasks[0].task_order_num` (the prefixed string), not `tasks[0].order_num` (the hex hash).
+**`order_num` is the only required parameter.** Its value = fast-clip-data's top-level `.task_order_num` (prefixed string).
 
-**Output**: Creation returns `data.task_id`. Poll until `status=2`. Extract `video_url`:
+**Output**: Creation returns `data.task_id`. Poll until top-level `.status=2`. Extract `video_url` from the nested results:
 
 ```json
 {
-  "tasks": [{
-    "video_url": "https://oss.example.com/.../output.mp4"
-  }]
+  "task_id": "<32-char hex>",
+  "task_order_num": "video_composing_xxxxx",
+  "status": 2,
+  "completed_at": "2026-...",
+  "results": {
+    "tasks": [{"video_url": "https://oss.example.com/.../output.mp4"}]
+  }
 }
 ```
 
-`type_name` is `video_composing` (no BGM) or `video_composing_2` (with BGM); both return `video_url` in the same place.
+`type_name` is `video_composing` (no BGM) or `video_composing_2` (with BGM); both return `video_url` at `.results.tasks[0].video_url`.
 
 ### Step 4 (optional) — magic-video
 
@@ -179,13 +188,17 @@ narrator-ai-cli task create popular-learning --json -d '{
 
 **`model_version`**: `advanced` (高级版) or `standard` (标准版).
 
-**Output**: Poll until `status=2`. Parse `task_result` (a JSON string) → `agent_unique_code` is the `learning_model_id`:
+**Output**: Poll until top-level `.status=2`. Parse `.results.tasks[0].task_result` (a JSON string) → `agent_unique_code` is the `learning_model_id`:
 
 ```json
 {
-  "tasks": [{
-    "task_result": "{\"agent_unique_code\": \"narrator-20251121160424-wjtOXO\"}"
-  }]
+  "task_id": "<32-char hex>",
+  "status": 2,
+  "results": {
+    "tasks": [{
+      "task_result": "{\"agent_unique_code\": \"narrator-20251121160424-wjtOXO\"}"
+    }]
+  }
 }
 ```
 
@@ -249,24 +262,28 @@ narrator-ai-cli task create generate-writing --json -d '{
 
 > ⚠️ **Language linkage**: If the selected dubbing voice is non-Chinese, add `"language": "<target language>"` to this request. Default is Chinese; do NOT omit when using a non-Chinese voice. (See SKILL.md § Agent Rules — "Honor the language chain".)
 
-**Output**: Poll until `status=2`. The completed response includes:
+**Output**: Poll until top-level `.status=2`. The completed response (flat — see `operations.md` § Task Query Response Shape):
 
 ```json
 {
-  "tasks": [{
-    "task_id": "<task_id>",
-    "task_order_num": "generate_writing_19c237b0_4ee66d",
-    "task_result": "video-clips-data/.../narration.txt"
+  "task_id": "<32-char hex>",
+  "task_order_num": "generate_writing_19c237b0_4ee66d",
+  "status": 2,
+  "completed_at": "2026-...",
+  "files": [{
+    "file_id": "<narration script file_id>",
+    "file_path": "user_data/.../narration.txt"
   }],
-  "order_info": {
-    "order_num": "script_69269bfc_GfVEgA"
+  "results": {
+    "tasks": [{"task_result": "user_data/.../narration.txt"}],
+    "order_info": {"order_num": "script_69269bfc_GfVEgA"}
   }
 }
 ```
 
 **Save (TWO different fields, both needed):**
 - `task_id` from the **creation response** — used to poll Step 2 to completion
-- `tasks[0].task_order_num` from the **completed poll response** — required as `order_num` input for clip-data in Step 3 (e.g. `generate_writing_19c237b0_4ee66d`). ⚠️ Do **not** use `order_info.order_num` (`script_xxxxx`); that's a separate billing-side identifier and is rejected by clip-data.
+- **Top-level `.task_order_num`** from the **completed poll response** — required as `order_num` input for clip-data in Step 3 (e.g. `generate_writing_19c237b0_4ee66d`). ⚠️ Do **not** use `.results.order_info.order_num` (`script_xxxxx`); that's a separate billing-side identifier and is rejected by clip-data.
 
 ### Step 3 — clip-data
 
@@ -281,7 +298,7 @@ narrator-ai-cli task create clip-data --json -d '{
 }'
 ```
 
-**Output**: Creation returns `data.task_id`. Poll until `status=2`. The clip-data task record's `task_order_num` looks like `generate_clip_data_xxxxx`. **However, this is NOT what video-composing wants in Standard Path** — see the warning in Step 4 below.
+**Output**: Creation returns `data.task_id`. Poll until top-level `.status=2`. The clip-data task record's `task_order_num` looks like `generate_clip_data_xxxxx`. **However, this is NOT what video-composing wants in Standard Path** — see the warning in Step 4 below.
 
 ### Step 4 — video-composing
 
@@ -298,8 +315,8 @@ narrator-ai-cli task create video-composing --json -d '{
 ```
 
 Pre-flight checklist:
-1. `generate-writing` (Step 2) has reached `status=2` and you've recorded its `task_order_num`.
-2. `clip-data` (Step 3) has reached `status=2` (must be done — but its `task_order_num` is **not** the value you pass).
+1. `generate-writing` (Step 2) has reached top-level `.status=2` and you've recorded its `task_order_num`.
+2. `clip-data` (Step 3) has reached top-level `.status=2` (must be done — but its `task_order_num` is **not** the value you pass).
 3. Pass the value from step 1, not step 2.
 
 ### Step 5 (optional) — magic-video

@@ -101,7 +101,7 @@ Config: `~/.narrator-ai/config.yaml` (mode 0600). Server defaults to `https://op
 | **file_id** | UUID for uploaded files. Via `file upload` or task results |
 | **task_id** | UUID returned on task creation. Poll with `task query` |
 | **task_order_num** | Assigned after task creation. Used as `order_num` for downstream tasks |
-| **file_ids** | Output file IDs in completed task results. Input for next steps |
+| **files[]** | Output files in the completed task response (flat, top-level array). Each entry has `file_id`, `file_path`, `suffix`. Read `.files[0].file_id` for the next step's input |
 | **learning_model_id** | Narration style model — from a pre-built template (90+) or `popular-learning` result |
 | **learning_srt** | Reference SRT file_id. **Mutually exclusive** with `learning_model_id` |
 
@@ -196,11 +196,11 @@ Detailed list commands, response shapes, and field mappings live in `references/
 3. **Not found, known title** → `task search-movie "<name>" --json` → `target_mode=1` (or `target_mode=2` if user uploads SRT). May take 60+ seconds (Gradio backend, results cached 24h).
 4. **Obscure / new content** → `target_mode=3` with user's uploaded SRT. `confirmed_movie_json` optional.
 
-**Step 1 — fast-writing**: pass `learning_model_id`, `target_mode`, `playlet_name`, `confirmed_movie_json` and/or `episodes_data`, `model` (`flash` 5pts/char or `pro` 15pts/char). Save `task_id` from the **creation response**, then poll until `status=2` and save `file_ids[0]` from the completed task.
+**Step 1 — fast-writing**: pass `learning_model_id`, `target_mode`, `playlet_name`, `confirmed_movie_json` and/or `episodes_data`, `model` (`flash` 5pts/char or `pro` 15pts/char). Save `task_id` from the **creation response**, then poll until top-level `.status=2` and save `.files[0].file_id` from the completed task.
 
-**Step 2 — fast-clip-data**: pass `task_id` + `file_id` from Step 1, plus `bgm`, `dubbing`, `dubbing_type`, and `episodes_data` with `video_oss_key` / `srt_oss_key` / `negative_oss_key`. Poll until `status=2`; read `task_order_num` from the task record.
+**Step 2 — fast-clip-data**: pass `task_id` + `file_id` from Step 1, plus `bgm`, `dubbing`, `dubbing_type`, and `episodes_data` with `video_oss_key` / `srt_oss_key` / `negative_oss_key`. Poll until top-level `.status=2`; read top-level `.task_order_num` from the response.
 
-**Step 3 — video-composing**: pass `order_num: <task_order_num from Step 2>`. **Only required param.** Poll → `tasks[0].video_url` is the finished MP4.
+**Step 3 — video-composing**: pass `order_num: <.task_order_num from Step 2>`. **Only required param.** Poll → `.results.tasks[0].video_url` is the finished MP4.
 
 **Step 4 (optional) — magic-video**: only on explicit user request. See `references/magic-video.md`.
 
@@ -210,13 +210,13 @@ Detailed list commands, response shapes, and field mappings live in `references/
 
 **Step 0 — Source material**: same material/upload flow as Fast Path. Use `video_file_id` as `video_oss_key` and `negative_oss_key`, and `srt_file_id` as `srt_oss_key` in `episodes_data`.
 
-**Step 1 — popular-learning** (skip if using a pre-built template): pass `video_srt_path`, `narrator_type`, `model_version`. Poll, then parse `task_result` JSON → `agent_unique_code` is the `learning_model_id`. Or use a pre-built template `id` from `task narration-styles --json` directly.
+**Step 1 — popular-learning** (skip if using a pre-built template): pass `video_srt_path`, `narrator_type`, `model_version`. Poll until top-level `.status=2`, then parse `.results.tasks[0].task_result` JSON → `agent_unique_code` is the `learning_model_id`. Or use a pre-built template `id` from `task narration-styles --json` directly.
 
 **Step 2 — generate-writing**: pass `learning_model_id`, `playlet_name`, `playlet_num`, `episodes_data`, plus three additional required fields — `target_platform` (e.g. `"douyin"`), `vendor_requirements` (`""` if none), and `target_character_name` (`""` if not applicable). Omitting any of these returns `10001 ... Field required`. Full param table in `references/workflows.md`. Save `task_id` from the creation response.
 
-**Step 3 — clip-data**: pass `order_num` (= `task_order_num` from Step 2's polled task record, e.g. `generate_writing_xxxxx`), plus `bgm`, `dubbing`, `dubbing_type`. ⚠️ **Different from Fast Path's fast-clip-data**, which takes `task_id` — clip-data takes `order_num` instead. Poll until `status=2` (required prerequisite for Step 4) — but **do not** use clip-data's own `task_order_num` for video-composing; Step 4 keys off `generate-writing`'s instead.
+**Step 3 — clip-data**: pass `order_num` (= top-level `.task_order_num` from Step 2's polled task record, e.g. `generate_writing_xxxxx`), plus `bgm`, `dubbing`, `dubbing_type`. ⚠️ **Different from Fast Path's fast-clip-data**, which takes `task_id` — clip-data takes `order_num` instead. Poll until top-level `.status=2` (required prerequisite for Step 4) — but **do not** use clip-data's own `task_order_num` for video-composing; Step 4 keys off `generate-writing`'s instead.
 
-**Step 4 — video-composing**: ⚠️ **Standard Path keys off `generate-writing`'s `task_order_num`** (`generate_writing_xxxxx`), **NOT** clip-data's. clip-data must reach `status=2` first as a prerequisite, but its own `task_order_num` (`generate_clip_data_xxxxx`) returns `10001 任务关联记录信息缺失` when submitted. This is opposite to Fast Path (where fast-clip-data is the right anchor) — see Important Notes #4.
+**Step 4 — video-composing**: ⚠️ **Standard Path keys off `generate-writing`'s `task_order_num`** (`generate_writing_xxxxx`), **NOT** clip-data's. clip-data must reach top-level `.status=2` first as a prerequisite, but its own `task_order_num` (`generate_clip_data_xxxxx`) returns `10001 任务关联记录信息缺失` when submitted. This is opposite to Fast Path (where fast-clip-data is the right anchor) — see Important Notes #4. Poll → `.results.tasks[0].video_url` is the finished MP4.
 
 **Step 5 (optional) — magic-video**: only on explicit user request. See `references/magic-video.md`.
 
