@@ -200,7 +200,7 @@ Detailed list commands, response shapes, and field mappings live in `references/
 
 **Step 2 — fast-clip-data**: pass `task_id` + `file_id` from Step 1, plus `bgm`, `dubbing`, `dubbing_type`, and `episodes_data` with `video_oss_key` / `srt_oss_key` / `negative_oss_key`. Poll until top-level `.status=2`; read top-level `.task_order_num` from the response.
 
-**Step 3 — video-composing**: pass `order_num: <.task_order_num from Step 2>`. **Only required param.** Poll → `.results.tasks[0].video_url` is the finished MP4.
+**Step 3 — video-composing**: pass `order_num: <.task_order_num from Step 2>`, plus `bgm`, `dubbing`, `dubbing_type` (re-pass the same values from Step 2 — the API does not inherit them). All four are required; submitting only `order_num` returns `10001 查询解说工程任务结果失败`. Poll → `.results.tasks[0].video_url` is the finished MP4.
 
 **Step 4 (optional) — magic-video**: only on explicit user request. See `references/magic-video.md`.
 
@@ -216,7 +216,7 @@ Detailed list commands, response shapes, and field mappings live in `references/
 
 **Step 3 — clip-data**: pass `order_num` (= top-level `.task_order_num` from Step 2's polled task record, e.g. `generate_writing_xxxxx`), plus `bgm`, `dubbing`, `dubbing_type`. ⚠️ **Different from Fast Path's fast-clip-data**, which takes `task_id` — clip-data takes `order_num` instead. Poll until top-level `.status=2` (required prerequisite for Step 4) — but **do not** use clip-data's own `task_order_num` for video-composing; Step 4 keys off `generate-writing`'s instead.
 
-**Step 4 — video-composing**: ⚠️ **Standard Path keys off `generate-writing`'s `task_order_num`** (`generate_writing_xxxxx`), **NOT** clip-data's. clip-data must reach top-level `.status=2` first as a prerequisite, but its own `task_order_num` (`generate_clip_data_xxxxx`) returns `10001 任务关联记录信息缺失` when submitted. This is opposite to Fast Path (where fast-clip-data is the right anchor) — see Important Notes #4. Poll → `.results.tasks[0].video_url` is the finished MP4.
+**Step 4 — video-composing**: pass `order_num` + `bgm` + `dubbing` + `dubbing_type` (all four required — re-pass the BGM/voice values from Step 3; the API does not inherit them, and submitting only `order_num` returns `10001 查询解说工程任务结果失败`). ⚠️ **Standard Path keys off `generate-writing`'s `task_order_num`** (`generate_writing_xxxxx`), **NOT** clip-data's. clip-data must reach top-level `.status=2` first as a prerequisite, but its own `task_order_num` (`generate_clip_data_xxxxx`) returns `10001 任务关联记录信息缺失` when submitted. This is opposite to Fast Path (where fast-clip-data is the right anchor) — see Important Notes #4. Poll → `.results.tasks[0].video_url` is the finished MP4.
 
 **Step 5 (optional) — magic-video**: only on explicit user request. See `references/magic-video.md`.
 

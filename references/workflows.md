@@ -140,11 +140,16 @@ narrator-ai-cli task create fast-clip-data --json -d '{
 
 ```bash
 narrator-ai-cli task create video-composing --json -d '{
-  "order_num": "<value of top-level .task_order_num from Step 2 — looks like fast_writing_clip_data_xxxxx>"
+  "order_num": "<value of top-level .task_order_num from Step 2 — looks like fast_writing_clip_data_xxxxx>",
+  "bgm": "<bgm_id — same as Step 2>",
+  "dubbing": "<voice_id — same as Step 2>",
+  "dubbing_type": "<dubbing_type — same as Step 2>"
 }'
 ```
 
-**`order_num` is the only required parameter.** Its value = fast-clip-data's top-level `.task_order_num` (prefixed string).
+**Required parameters** (per `task types` definition): `order_num`, `bgm`, `dubbing`, `dubbing_type` — all four. Re-pass the same `bgm` / `dubbing` / `dubbing_type` values used in Step 2's fast-clip-data. Submitting only `order_num` returns `10001 查询解说工程任务结果失败`.
+
+`order_num`'s value = fast-clip-data's top-level `.task_order_num` (prefixed string).
 
 **Output**: Creation returns `data.task_id`. Poll until top-level `.status=2`. Extract `video_url` from the nested results:
 
@@ -310,14 +315,20 @@ narrator-ai-cli task create clip-data --json -d '{
 
 ```bash
 narrator-ai-cli task create video-composing --json -d '{
-  "order_num": "<generate-writing task_order_num — looks like generate_writing_xxxxx>"
+  "order_num": "<generate-writing task_order_num — looks like generate_writing_xxxxx>",
+  "bgm": "<bgm_id — same as Step 3>",
+  "dubbing": "<voice_id — same as Step 3>",
+  "dubbing_type": "<dubbing_type — same as Step 3>"
 }'
 ```
+
+**Required parameters** (per `task types` definition): `order_num`, `bgm`, `dubbing`, `dubbing_type` — all four. Re-pass the same `bgm` / `dubbing` / `dubbing_type` values used in Step 3's clip-data. Submitting only `order_num` returns `10001 查询解说工程任务结果失败` even when both upstream tasks are at `status=2`.
 
 Pre-flight checklist:
 1. `generate-writing` (Step 2) has reached top-level `.status=2` and you've recorded its `task_order_num`.
 2. `clip-data` (Step 3) has reached top-level `.status=2` (must be done — but its `task_order_num` is **not** the value you pass).
-3. Pass the value from step 1, not step 2.
+3. Pass `generate-writing`'s `task_order_num` (Step 2), not clip-data's (Step 3).
+4. Re-pass `bgm` / `dubbing` / `dubbing_type` — the API does not inherit them from clip-data.
 
 ### Step 5 (optional) — magic-video
 
