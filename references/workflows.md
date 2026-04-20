@@ -1,5 +1,7 @@
 # Workflows — Detailed Steps
 
+> ← Back to [SKILL.md](../SKILL.md)
+
 Full parameter tables and JSON request examples for both pipelines. The high-level flow lives in **SKILL.md § Fast Path / Standard Path**. Resource selection (material, BGM, dubbing, template) is covered in `resources.md`.
 
 ---

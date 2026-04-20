@@ -1,5 +1,7 @@
 # Magic Video — Visual Templates (Optional Step)
 
+> ← Back to [SKILL.md](../SKILL.md)
+
 > ⚠️ **Agent restriction**: Do NOT auto-create magic-video tasks. Only create when the user **explicitly requests** a visual template. Present the catalog, explain options, let the user choose. Multiple templates can be selected — each produces a separate output video.
 
 Magic Video is a value-added service applied **after** video-composing:

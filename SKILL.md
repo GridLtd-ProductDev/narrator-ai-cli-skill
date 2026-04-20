@@ -47,6 +47,24 @@ This file covers decision flow, the common workflow, and pointers. Detailed look
 | Magic Video — optional visual template step (catalog, params, language rules) | `references/magic-video.md` |
 | Polling pattern, task types, file ops, user account, error codes | `references/operations.md` |
 
+## Pipeline at a Glance
+
+```
+                    ┌─── Fast Path (原创文案, cheaper) ───┐
+                    │   fast-writing → fast-clip-data     │
+  Source material ──┤              ↓                      ├──→ video-composing ──→ (magic-video)
+  (material list /  │   [video-composing keys off         │   final MP4 URL       optional visual
+   search-movie /   │    fast-clip-data.task_order_num]   │                        template pass
+   file upload)     └─────────────────────────────────────┘
+                    ┌─── Standard Path (二创文案) ────────┐
+                    │   popular-learning → generate-      │
+                    │   writing → clip-data               │
+                    │              ↓                      │
+                    │   [video-composing keys off         │
+                    │    generate-writing.task_order_num] │
+                    └─────────────────────────────────────┘
+```
+
 ## Agent Rules (mandatory — apply across all steps)
 
 > **Always:**
@@ -61,38 +79,9 @@ This file covers decision flow, the common workflow, and pointers. Detailed look
 > - **Submit Chinese default values for `magic-video` text params when narration language is non-Chinese.** The defaults are hardcoded Chinese and will appear as Chinese text in a non-Chinese video.
 > - **Submit `.task_id` (32-char hex) as `order_num`.** Downstream tasks want `.task_order_num` (the prefixed string like `generate_writing_xxxxx`), not `.task_id`. Submitting the hex returns `10001 任务关联记录数据异常`. The other look-alike — `.results.order_info.order_num` (`script_xxxxx`) — is also wrong; see `references/operations.md` § Task Query Response Shape.
 
-## Installation
+## Prerequisites
 
-```bash
-# Recommended: pinned release
-pip install "narrator-ai-cli @ https://github.com/GridLtd-ProductDev/narrator-ai-cli/archive/refs/tags/v1.0.0.zip"
-
-# Or from main
-pip install "narrator-ai-cli @ git+https://github.com/GridLtd-ProductDev/narrator-ai-cli.git"
-```
-
-Requires Python 3.10+.
-
-## Setup
-
-```bash
-narrator-ai-cli config init                          # interactive (server URL + API key)
-narrator-ai-cli config set app_key <your_app_key>
-narrator-ai-cli config show
-narrator-ai-cli user balance                         # verify
-```
-
-No API key? Contact: WeChat `gezimufeng` or email `merlinyang@gridltd.com`.
-
-Config: `~/.narrator-ai/config.yaml` (mode 0600). Server defaults to `https://openapi.jieshuo.cn`.
-
-**Env overrides** (take precedence over config file):
-
-| Variable | Description | Default |
-|---|---|---|
-| `NARRATOR_SERVER` | API server URL | `https://openapi.jieshuo.cn` |
-| `NARRATOR_APP_KEY` | API key | (from config) |
-| `NARRATOR_TIMEOUT` | Request timeout (seconds) | 30 |
+This skill assumes the `narrator-ai-cli` binary is installed and configured with a valid `NARRATOR_APP_KEY`. See [README.md](README.md) for install / setup. Agents can verify with `narrator-ai-cli user balance`.
 
 ## Core Concepts
 

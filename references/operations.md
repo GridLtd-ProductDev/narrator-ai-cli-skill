@@ -1,5 +1,7 @@
 # Operations — Polling, Files, Account, Errors
 
+> ← Back to [SKILL.md](../SKILL.md)
+
 Reference for task polling, task management commands, file operations, user/account commands, and the full error code table.
 
 ---

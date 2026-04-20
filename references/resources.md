@@ -1,5 +1,7 @@
 # Resources — Materials, BGM, Dubbing, Templates
 
+> ← Back to [SKILL.md](../SKILL.md)
+
 Detailed list commands, response formats, and field mappings for the four resource types selected before any task. The selection rules (never auto-select, present 5–8 options, etc.) live in **SKILL.md § Resource Selection Protocol**.
 
 ---
