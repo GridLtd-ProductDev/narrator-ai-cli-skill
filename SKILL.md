@@ -117,7 +117,7 @@ Config: `~/.narrator-ai/config.yaml` (mode 0600). Server defaults to `https://op
    - "Show me what's available" → run `material list --json` and present 5–8 titles spanning varied genres; offer to filter by genre on request
    - "I'll upload my own video + SRT" → guide through `file upload`
 3. **Defer the Fast vs Standard path question** until source material is confirmed. Asking both at once forces a decision the user has no context for yet.
-4. **Optionally share the visual resources preview link** (BGM / dubbing / templates browseable visually): https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc — but only if the user wants to browse, not as a wall of links upfront.
+4. **Optionally share the visual resources preview link** (BGM / dubbing / templates browsable visually): https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc — but only if the user wants to browse, not as a wall of links upfront.
 
 **Example opening (Chinese conversation):**
 
@@ -212,9 +212,9 @@ Detailed list commands, response shapes, and field mappings live in `references/
 
 **Step 1 — popular-learning** (skip if using a pre-built template): pass `video_srt_path`, `narrator_type`, `model_version`. Poll, then parse `task_result` JSON → `agent_unique_code` is the `learning_model_id`. Or use a pre-built template `id` from `task narration-styles --json` directly.
 
-**Step 2 — generate-writing**: pass `learning_model_id`, `playlet_name`, `playlet_num`, `episodes_data`. Save `task_id` from the creation response.
+**Step 2 — generate-writing**: pass `learning_model_id`, `playlet_name`, `playlet_num`, `episodes_data`, plus three additional required fields — `target_platform` (e.g. `"douyin"`), `vendor_requirements` (`""` if none), and `target_character_name` (`""` if not applicable). Omitting any of these returns `10001 ... Field required`. Full param table in `references/workflows.md`. Save `task_id` from the creation response.
 
-**Step 3 — clip-data**: pass `order_num` (= `task_order_num` from Step 2's polled task record, e.g. `generate_writing_xxxxx`), plus `bgm`, `dubbing`, `dubbing_type`. ⚠️ **Different from Fast Path's fast-clip-data**, which takes `task_id` — clip-data takes `order_num` instead. Poll until `status=2`; read `task_order_num` from the task record (input to video-composing).
+**Step 3 — clip-data**: pass `order_num` (= `task_order_num` from Step 2's polled task record, e.g. `generate_writing_xxxxx`), plus `bgm`, `dubbing`, `dubbing_type`. ⚠️ **Different from Fast Path's fast-clip-data**, which takes `task_id` — clip-data takes `order_num` instead. Poll until `status=2` (required prerequisite for Step 4) — but **do not** use clip-data's own `task_order_num` for video-composing; Step 4 keys off `generate-writing`'s instead.
 
 **Step 4 — video-composing**: ⚠️ **Standard Path keys off `generate-writing`'s `task_order_num`** (`generate_writing_xxxxx`), **NOT** clip-data's. clip-data must reach `status=2` first as a prerequisite, but its own `task_order_num` (`generate_clip_data_xxxxx`) returns `10001 任务关联记录信息缺失` when submitted. This is opposite to Fast Path (where fast-clip-data is the right anchor) — see Important Notes #4.
 

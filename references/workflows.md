@@ -75,7 +75,7 @@ narrator-ai-cli task create fast-writing --json -d @request.json
 |---|---|---|---|---|
 | `learning_model_id` | str | Exactly one (mutually exclusive with `learning_srt`) | - | Style model ID from a pre-built template or popular-learning result. **Do not provide both.** |
 | `learning_srt` | str | Exactly one (mutually exclusive with `learning_model_id`) | - | Reference SRT file_id. Use only when no template / popular-learning model is available. **Do not provide both.** |
-| `target_mode` | str | Yes | - | `"1"` Hot Drama, `"2"` Original Mix, `"3"` New Drama |
+| `target_mode` | str | Yes | - | `"1"` Pure narration (热门影视), `"2"` Original mix (原声混剪), `"3"` New drama (冷门/新剧) |
 | `playlet_name` | str | Yes | - | Movie / drama name |
 | `playlet_num` | str | No | `"1"` | Episode/part number. Use `"1"` for single-episode; increment for multi-part |
 | `confirmed_movie_json` | obj | mode=1, 2; optional mode=3 | - | From material data (material found) or `search-movie` result. **Never fabricate.** |

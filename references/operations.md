@@ -11,6 +11,8 @@ Reference for task polling, task management commands, file operations, user/acco
 ```bash
 # Standard polling loop — use this every time a task needs to be monitored
 TASK_ID="<task_id>"
+empty_streak=0
+MAX_EMPTY=12   # ~1 min of consecutive parse failures → bail out
 while true; do
   result=$(narrator-ai-cli task query "$TASK_ID" --json 2>&1)
   status=$(echo "$result" | python3 -c "
@@ -25,9 +27,20 @@ except Exception:
   echo "[$(date '+%H:%M:%S')] task=$TASK_ID status=$status"
   [ "$status" = "2" ] && echo "Done." && break
   [ "$status" = "3" ] && echo "Failed:" && echo "$result" && break
+  if [ -z "$status" ]; then
+    empty_streak=$((empty_streak + 1))
+    if [ "$empty_streak" -ge "$MAX_EMPTY" ]; then
+      echo "Aborting: $MAX_EMPTY consecutive unparseable responses. Last response:" && echo "$result"
+      break
+    fi
+  else
+    empty_streak=0
+  fi
   sleep 5
 done
 ```
+
+> ⚠️ **Why the empty-status guard**: `task query` may return non-JSON (network error, auth failure, CLI traceback). Without the guard, an empty `status` neither triggers success nor failure, and the loop runs forever. After `MAX_EMPTY` consecutive unparseable responses (~1 min at 5 s intervals), the loop bails out with the last raw response so the agent can diagnose.
 
 **Polling rules:**
 - Poll every **5 seconds**. Faster polling adds API load without benefit.
