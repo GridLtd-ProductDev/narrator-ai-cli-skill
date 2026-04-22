@@ -189,7 +189,7 @@ Detailed list commands, response shapes, and field mappings live in `references/
 
 **Step 2 — fast-clip-data**: pass `task_id` + `file_id` from Step 1, plus `bgm`, `dubbing`, `dubbing_type`, and `episodes_data` with `video_oss_key` / `srt_oss_key` / `negative_oss_key`. Poll until top-level `.status=2`; read top-level `.task_order_num` from the response.
 
-**Step 3 — video-composing**: pass `order_num: <.task_order_num from Step 2>`, plus `bgm`, `dubbing`, `dubbing_type` (re-pass the same values from Step 2 — the API does not inherit them). All four are required; submitting only `order_num` returns `10001 查询解说工程任务结果失败`. Poll → `.results.tasks[0].video_url` is the finished MP4.
+**Step 3 — video-composing**: pass `order_num: <.task_order_num from Step 2>` only. Poll → `.results.tasks[0].video_url` is the finished MP4.
 
 **Step 4 (optional) — magic-video**: only on explicit user request. See `references/magic-video.md`.
 
