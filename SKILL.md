@@ -188,7 +188,7 @@ Detailed list commands, response shapes, and field mappings live in `references/
 3. **Not found, known title** → `task search-movie "<name>" --json` → `target_mode=1` (or `target_mode=2` if user uploads SRT). May take 60+ seconds (Gradio backend, results cached 24h).
 4. **Obscure / new content** → `target_mode=3` with user's uploaded SRT. `confirmed_movie_json` optional.
 
-**Step 1 — fast-writing**: pass `learning_model_id`, `target_mode`, `playlet_name`, `confirmed_movie_json` and/or `episodes_data`, `model` (`flash` 5pts/char or `pro` 15pts/char). Save `task_id` from the **creation response**, then poll until top-level `.status=2` and save `.files[0].file_id` from the completed task.
+**Step 1 — fast-writing**: pass `learning_model_id`, `target_mode`, `playlet_name`, `confirmed_movie_json` and/or `episodes_data`, `model`. Pricing varies by `target_mode` — see model pricing table in `references/workflows.md` § Step 1. Save `task_id` from the **creation response**, then poll until top-level `.status=2` and save `.files[0].file_id` from the completed task. Actual cost: read `consumed_points` from `task query` — that is the authoritative charge.
 
 **Step 2 — fast-clip-data**: pass `task_id` + `file_id` from Step 1, plus `bgm`, `dubbing`, `dubbing_type`, and `episodes_data` with `video_oss_key` / `srt_oss_key` / `negative_oss_key`. Poll until top-level `.status=2`; read top-level `.task_order_num` from the response.
 
