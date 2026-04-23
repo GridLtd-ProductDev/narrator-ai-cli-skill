@@ -31,10 +31,10 @@ In short: **CLI is the hands. Skill is the brain.** Together, the AI agent can p
 ### Step 1: Install the CLI tool
 
 ```bash
-pip install "narrator-ai-cli @ git+https://github.com/GridLtd-ProductDev/narrator-ai-cli.git"
+pip install "narrator-ai-cli @ git+https://github.com/NarratorAI-Studio/narrator-ai-cli.git"
 ```
 
-> See [narrator-ai-cli](https://github.com/GridLtd-ProductDev/narrator-ai-cli) for detailed installation options.
+> See [narrator-ai-cli](https://github.com/NarratorAI-Studio/narrator-ai-cli) for detailed installation options.
 
 ### Step 2: Configure API key
 
@@ -110,7 +110,7 @@ Once installed, use natural language:
 |---------|---------|
 | Two workflow paths | Adapted Narration and Original Narration |
 | Three creation modes | Hot Drama / Original Mix / New Drama |
-| Built-in resources | 93 movies, 146 BGM tracks, 63 dubbing voices, 90+ narration templates |
+| Built-in resources | ~100 movies, 146 BGM tracks, 63 dubbing voices, 90+ narration templates |
 | Full pipeline | Script → Clip data → Video composing → Visual template |
 | Standalone tasks | Voice cloning, text-to-speech |
 | Data flow mapping | Which output feeds into which input |
@@ -122,31 +122,31 @@ Once installed, use natural language:
 | Section | Description |
 |---------|-------------|
 | Frontmatter | Skill metadata (name, description, requirements) |
-| Architecture | CLI source structure and design choices |
-| Core Concepts | Key terms: file_id, task_id, order_num, etc. |
-| Workflow Paths | Two complete pipelines with step-by-step commands |
-| Prerequisites | How to select resources (materials, BGM, dubbing, templates) |
-| Fast Path | Recommended workflow: search → write → clip → compose → magic |
-| Standard Path | Full workflow: learn → write → clip → compose → magic |
+| Pipeline at a Glance | ASCII diagram of Fast Path and Standard Path |
+| Agent Rules | Mandatory rules: confirm before acting, language chain, polling pattern, etc. |
+| Core Concepts | Key terms: file_id, task_id, task_order_num, etc. |
+| Conversation Initiation | How to open a session and the decision sequence |
+| Two Workflow Paths | Fast Path (原创文案) vs Standard Path (二创文案) |
+| Resource Selection Protocol | BGM, dubbing, template selection order and rules |
+| Fast Path | Steps 0–4 with parameter notes |
+| Standard Path | Steps 0–5 with parameter notes |
 | Standalone Tasks | Voice clone and TTS |
-| Task Management | Query, list, budget, verify, save |
-| File Operations | Upload, download, list, delete |
-| Error Handling | All 18 API error codes with actions |
-| Data Flow | ASCII diagram of complete pipeline |
-| Important Notes | 9 critical gotchas and best practices |
+| Important Notes | 7 critical gotchas and best practices |
+| Data & Privacy | API endpoint, file handling, credentials scope |
+| references/ | Detailed lookup tables split into resources.md, workflows.md, magic-video.md, operations.md |
 
 ---
 
 ## Requirements
 
-- **CLI**: narrator-ai-cli v0.1.0+
+- **CLI**: narrator-ai-cli v1.0.0+
 - **Python**: 3.10+
 - **Dependencies**: typer, httpx[socks], httpx-sse, pyyaml, rich
 - **API key**: Contact us to get one
 
 ## Links
 
-- 📦 [narrator-ai-cli CLI repo](https://github.com/GridLtd-ProductDev/narrator-ai-cli)
+- 📦 [narrator-ai-cli CLI repo](https://github.com/NarratorAI-Studio/narrator-ai-cli)
 - 📖 [Resource preview (Feishu Docs)](https://ceex7z9m67.feishu.cn/wiki/WLPnwBysairenFkZDbicZOfKnbc)
 - 🦞 [OpenClaw agent framework](https://github.com/openclaw/openclaw)
 
