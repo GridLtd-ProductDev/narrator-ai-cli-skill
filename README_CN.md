@@ -54,10 +54,16 @@ git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   ~/.openclaw/skills/narrator-ai-cli
 ```
 
-**Windsurf / Claude Code / Cursor：**
+**Windsurf / Claude Code：**
 ```bash
 git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   /path/to/your/project/.skills/narrator-ai-cli
+```
+
+**Cursor：**
+```bash
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  /path/to/your/project/.cursor/rules/narrator-ai-cli
 ```
 
 **其他支持 Markdown 技能文件的 Agent：**
@@ -96,7 +102,7 @@ git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
 | **有道龙虾** | `git clone` 到技能目录 | ✅ 已验证 |
 | **元气 AI** | `git clone` 到技能目录 | ✅ 已验证 |
 | **Claude Code** | `git clone` 到项目 .skills 目录 | ✅ 已验证 |
-| **Cursor** | `git clone` 到 rules/skills 目录 | ✅ 已验证 |
+| **Cursor** | `git clone` 到 .cursor/rules 目录 | ✅ 已验证 |
 | 其他支持 Markdown Skill 的 Agent | `git clone` 后指向 SKILL.md | ✅ 兼容 |
 
 ---

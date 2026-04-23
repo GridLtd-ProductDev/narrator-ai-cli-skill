@@ -54,10 +54,16 @@ git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   ~/.openclaw/skills/narrator-ai-cli
 ```
 
-**Windsurf / Claude Code / Cursor:**
+**Windsurf / Claude Code:**
 ```bash
 git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   /path/to/your/project/.skills/narrator-ai-cli
+```
+
+**Cursor:**
+```bash
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  /path/to/your/project/.cursor/rules/narrator-ai-cli
 ```
 
 **Any markdown-reading agent:**
@@ -96,7 +102,7 @@ Once installed, use natural language:
 | **Youdao Lobster** | `git clone` into skills directory | ✅ Verified |
 | **Yuanqi AI** | `git clone` into skills directory | ✅ Verified |
 | **Claude Code** | `git clone` into project .skills directory | ✅ Verified |
-| **Cursor** | `git clone` into rules/skills directory | ✅ Verified |
+| **Cursor** | `git clone` into .cursor/rules directory | ✅ Verified |
 | Any markdown-skill agent | `git clone` repo, point agent to SKILL.md | ✅ Compatible |
 
 ---
