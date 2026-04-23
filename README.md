@@ -89,15 +89,15 @@ Once installed, use natural language:
 
 | Platform | Setup | Status |
 |----------|-------|--------|
-| **OpenClaw** | Native skill loading | ✅ Verified |
-| **Windsurf** | .skills directory | ✅ Verified |
-| **WorkBuddy** (Tencent) | Upload SKILL.md | ✅ Verified |
-| **QClaw** (Tencent) | Upload SKILL.md | ✅ Verified |
-| **Youdao Lobster** | Skill loading | ✅ Verified |
-| **Yuanqi AI** | Skill loading | ✅ Verified |
-| **Claude Code** | SKILL.md in project root | ✅ Verified |
-| **Cursor** | rules/skills directory | ✅ Verified |
-| Any markdown-skill agent | Point to SKILL.md | ✅ Compatible |
+| **OpenClaw** | `git clone` into skills directory | ✅ Verified |
+| **Windsurf** | `git clone` into .skills directory | ✅ Verified |
+| **WorkBuddy** (Tencent) | Upload SKILL.md + all files in references/ | ✅ Verified |
+| **QClaw** (Tencent) | Upload SKILL.md + all files in references/ | ✅ Verified |
+| **Youdao Lobster** | `git clone` into skills directory | ✅ Verified |
+| **Yuanqi AI** | `git clone` into skills directory | ✅ Verified |
+| **Claude Code** | `git clone` into project .skills directory | ✅ Verified |
+| **Cursor** | `git clone` into rules/skills directory | ✅ Verified |
+| Any markdown-skill agent | `git clone` repo, point agent to SKILL.md | ✅ Compatible |
 
 ---
 
@@ -123,7 +123,7 @@ Once installed, use natural language:
 | Agent Rules | Mandatory rules: confirm before acting, language chain, polling pattern, etc. |
 | Core Concepts | Key terms: file_id, task_id, task_order_num, etc. |
 | Conversation Initiation | How to open a session and the decision sequence |
-| Two Workflow Paths | Fast Path (原创文案) vs Standard Path (二创文案) |
+| Two Workflow Paths | Fast Path (Original Narration) vs Standard Path (Adapted Narration) |
 | Resource Selection Protocol | BGM, dubbing, template selection order and rules |
 | Fast Path | Steps 0–4 with parameter notes |
 | Standard Path | Steps 0–5 with parameter notes |

@@ -89,15 +89,15 @@ git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
 
 | 平台 | 安装方式 | 状态 |
 |------|---------|------|
-| **小龙虾 OpenClaw** | 原生 Skill 加载 | ✅ 已验证 |
-| **WorkBuddy**（腾讯） | 上传 SKILL.md | ✅ 已验证 |
-| **QClaw**（腾讯） | 上传 SKILL.md | ✅ 已验证 |
-| **Windsurf** | .skills 目录 | ✅ 已验证 |
-| **有道龙虾** | Skill 加载 | ✅ 已验证 |
-| **元气 AI** | Skill 加载 | ✅ 已验证 |
-| **Claude Code** | 项目根目录 SKILL.md | ✅ 已验证 |
-| **Cursor** | rules/skills 目录 | ✅ 已验证 |
-| 其他支持 Markdown Skill 的 Agent | 指向 SKILL.md 即可 | ✅ 兼容 |
+| **小龙虾 OpenClaw** | `git clone` 到技能目录 | ✅ 已验证 |
+| **WorkBuddy**（腾讯） | 上传 SKILL.md + references/ 全部文件 | ✅ 已验证 |
+| **QClaw**（腾讯） | 上传 SKILL.md + references/ 全部文件 | ✅ 已验证 |
+| **Windsurf** | `git clone` 到 .skills 目录 | ✅ 已验证 |
+| **有道龙虾** | `git clone` 到技能目录 | ✅ 已验证 |
+| **元气 AI** | `git clone` 到技能目录 | ✅ 已验证 |
+| **Claude Code** | `git clone` 到项目 .skills 目录 | ✅ 已验证 |
+| **Cursor** | `git clone` 到 rules/skills 目录 | ✅ 已验证 |
+| 其他支持 Markdown Skill 的 Agent | `git clone` 后指向 SKILL.md | ✅ 兼容 |
 
 ---
 
