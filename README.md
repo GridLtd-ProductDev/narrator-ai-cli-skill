@@ -46,34 +46,31 @@ narrator-ai-cli config set app_key <your_app_key>
 
 ### Step 3: Install the Skill
 
-Choose the method for your agent platform:
+The skill consists of `SKILL.md` **and** the `references/` directory — both are required. Clone the repo directly into your agent's skills folder:
 
 **OpenClaw:**
 ```bash
-mkdir -p ~/.openclaw/skills/narrator-ai-cli
-cp SKILL.md ~/.openclaw/skills/narrator-ai-cli/SKILL.md
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  ~/.openclaw/skills/narrator-ai-cli
 ```
 
-**WorkBuddy / QClaw (Tencent):**
-
-Upload `SKILL.md` through the skill management UI.
-
-**Windsurf:**
+**Windsurf / Claude Code / Cursor:**
 ```bash
-cp SKILL.md /path/to/your/project/.skills/narrator-ai-cli/SKILL.md
-```
-
-**Claude Code / Cursor:**
-```bash
-cp SKILL.md /path/to/your/project/.skills/narrator-ai-cli/SKILL.md
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  /path/to/your/project/.skills/narrator-ai-cli
 ```
 
 **Any markdown-reading agent:**
 ```bash
-cp SKILL.md /path/to/agent/skills/narrator-ai-cli/SKILL.md
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  /path/to/agent/skills/narrator-ai-cli
 ```
 
-> 💡 **Tip**: You can also just give the agent this repo URL — most agents can read the GitHub repo structure and auto-configure.
+**WorkBuddy / QClaw (Tencent):**
+
+Upload `SKILL.md` and all files inside the `references/` folder through the skill management UI.
+
+> 💡 **Tip**: To update the skill later, just run `git pull` inside the cloned directory.
 
 ### Step 4: Start talking!
 

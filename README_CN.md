@@ -46,29 +46,31 @@ narrator-ai-cli config set app_key 你的API_Key
 
 ### 第 3 步：安装 Skill
 
-根据你使用的 Agent 平台，选择对应的安装方式：
+Skill 由 `SKILL.md` **和** `references/` 目录共同组成，两者缺一不可。将整个仓库 clone 到 Agent 的技能目录即可：
 
 **小龙虾 OpenClaw：**
 ```bash
-mkdir -p ~/.openclaw/skills/narrator-ai-cli
-cp SKILL.md ~/.openclaw/skills/narrator-ai-cli/SKILL.md
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  ~/.openclaw/skills/narrator-ai-cli
 ```
 
-**WorkBuddy / QClaw（腾讯系）：**
-
-在技能管理界面上传 `SKILL.md` 文件即可。
-
-**Windsurf：**
+**Windsurf / Claude Code / Cursor：**
 ```bash
-cp SKILL.md /path/to/your/project/.skills/narrator-ai-cli/SKILL.md
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  /path/to/your/project/.skills/narrator-ai-cli
 ```
 
 **其他支持 Markdown 技能文件的 Agent：**
 ```bash
-cp SKILL.md /path/to/agent/skills/narrator-ai-cli/SKILL.md
+git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
+  /path/to/agent/skills/narrator-ai-cli
 ```
 
-> 💡 **提示**：你也可以直接把本仓库地址发给 AI，让它自己学习安装——大部分 Agent 都能理解 GitHub 仓库结构并自动完成配置。
+**WorkBuddy / QClaw（腾讯系）：**
+
+在技能管理界面上传 `SKILL.md` 以及 `references/` 目录下的所有文件。
+
+> 💡 **提示**：后续升级只需在 clone 目录里执行 `git pull` 即可。
 
 ### 第 4 步：开始对话！
 
