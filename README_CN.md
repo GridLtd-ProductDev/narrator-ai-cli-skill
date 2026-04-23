@@ -125,8 +125,10 @@ git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
 | 章节 | 内容 |
 |------|------|
 | Frontmatter | 技能元数据（名称、描述、依赖） |
+| Reference Index | 指向 `references/` 详细查阅表的索引（resources、workflows、magic-video、operations） |
 | Pipeline at a Glance | Fast Path 和 Standard Path 的 ASCII 流程图 |
 | Agent Rules | 强制规则：操作前确认、语言链、轮询模式等 |
+| Prerequisites | 前置条件：已安装 `narrator-ai-cli` 且配置了 `NARRATOR_APP_KEY` |
 | Core Concepts | 关键概念：file_id、task_id、task_order_num 等 |
 | Conversation Initiation | 如何开启会话及决策顺序 |
 | Two Workflow Paths | Fast Path（原创文案）vs Standard Path（二创文案） |
@@ -136,7 +138,6 @@ git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
 | Standalone Tasks | 声音克隆和 TTS |
 | Important Notes | 7 条关键注意事项和最佳实践 |
 | Data & Privacy | API 端点、文件处理、凭证范围 |
-| references/ | 详细查阅表，拆分为 resources.md、workflows.md、magic-video.md、operations.md |
 
 ---
 

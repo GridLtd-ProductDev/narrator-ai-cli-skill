@@ -125,8 +125,10 @@ Once installed, use natural language:
 | Section | Description |
 |---------|-------------|
 | Frontmatter | Skill metadata (name, description, requirements) |
+| Reference Index | Pointers to detailed lookup tables in `references/` (resources, workflows, magic-video, operations) |
 | Pipeline at a Glance | ASCII diagram of Fast Path and Standard Path |
 | Agent Rules | Mandatory rules: confirm before acting, language chain, polling pattern, etc. |
+| Prerequisites | Assumes `narrator-ai-cli` is installed and `NARRATOR_APP_KEY` is set |
 | Core Concepts | Key terms: file_id, task_id, task_order_num, etc. |
 | Conversation Initiation | How to open a session and the decision sequence |
 | Two Workflow Paths | Fast Path (Original Narration) vs Standard Path (Adapted Narration) |
@@ -136,7 +138,6 @@ Once installed, use natural language:
 | Standalone Tasks | Voice clone and TTS |
 | Important Notes | 7 critical gotchas and best practices |
 | Data & Privacy | API endpoint, file handling, credentials scope |
-| references/ | Detailed lookup tables split into resources.md, workflows.md, magic-video.md, operations.md |
 
 ---
 
