@@ -6,7 +6,7 @@
 
 ## What is this?
 
-A machine-readable skill file (`SKILL.md`) that teaches AI agents how to use the [narrator-ai-cli](https://github.com/GridLtd-ProductDev/narrator-ai-cli) tool for automated video narration production.
+A machine-readable skill file (`SKILL.md`) that teaches AI agents how to use the [narrator-ai-cli](https://github.com/NarratorAI-Studio/narrator-ai-cli) tool for automated video narration production.
 
 ```
 You say: "Create a narration video for Pegasus in a comedy style"

@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-> 安装这个 Skill，你的小龙虾（OpenClaw）就能理解如何使用 [narrator-ai-cli](https://github.com/GridLtd-ProductDev/narrator-ai-cli) 来制作电影解说视频。对着 AI 说一句「帮我做一个电影解说」，剩下的交给它。
+> 安装这个 Skill，你的小龙虾（OpenClaw）就能理解如何使用 [narrator-ai-cli](https://github.com/NarratorAI-Studio/narrator-ai-cli) 来制作电影解说视频。对着 AI 说一句「帮我做一个电影解说」，剩下的交给它。
 
 ## 这是什么？
 
