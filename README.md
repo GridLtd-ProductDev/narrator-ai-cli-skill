@@ -50,31 +50,35 @@ The skill consists of `SKILL.md` **and** the `references/` directory — both ar
 
 **OpenClaw:**
 ```bash
+mkdir -p ~/.openclaw/skills
 git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   ~/.openclaw/skills/narrator-ai-cli
 ```
 
 **Windsurf / Claude Code:**
 ```bash
+mkdir -p /path/to/your/project/.skills
 git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   /path/to/your/project/.skills/narrator-ai-cli
 ```
 
 **Cursor:**
 ```bash
+mkdir -p /path/to/your/project/.cursor/rules
 git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   /path/to/your/project/.cursor/rules/narrator-ai-cli
 ```
 
 **Any markdown-reading agent:**
 ```bash
+mkdir -p /path/to/agent/skills
 git clone https://github.com/NarratorAI-Studio/narrator-ai-cli-skill.git \
   /path/to/agent/skills/narrator-ai-cli
 ```
 
 **WorkBuddy / QClaw (Tencent):**
 
-Upload `SKILL.md` and all files inside the `references/` folder through the skill management UI.
+Upload `SKILL.md` and the entire `references/` folder through the skill management UI, keeping the directory structure intact (`references/` must remain a subfolder alongside `SKILL.md` — do not flatten the files).
 
 > 💡 **Tip**: To update the skill later, just run `git pull` inside the cloned directory.
 
